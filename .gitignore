@@ -1,0 +1,51 @@
+# Build dirs
+build/
+build-*/
+cmake-build-*/
+
+# CMake generated
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+CTestTestfile.cmake
+
+# Binaries
+*.exe
+*.out
+*.app
+
+# Object files
+*.o
+*.obj
+*.a
+*.lib
+*.dll
+*.so
+*.dylib
+
+# Debug
+*.pdb
+
+# Logs
+*.log
+*.log.*
+
+# Coverage
+*.gcda
+*.gcno
+*.gcov
+coverage/
+lcov.info
+
+# Runtime/generated data
+*_last.rpl
+*.csv
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,65 @@
+name: build
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+
+jobs:
+  linux:
+    name: Linux (g++ ${{ matrix.cxx }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        cxx: [g++-11, g++-12]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ matrix.cxx }} lcov
+      - name: Build
+        run: make CXX=${{ matrix.cxx }}
+      - name: Tests
+        run: make CXX=${{ matrix.cxx }} run-tests
+      - name: Coverage (g++-12 only)
+        if: matrix.cxx == 'g++-12'
+        run: |
+          make clean
+          make CXX=g++-12 CXXFLAGS="-std=c++17 -O0 -g --coverage -Isrc" run-tests
+          lcov --capture --directory . --output-file coverage.info \
+               --ignore-errors mismatch,unused
+          lcov --remove coverage.info '/usr/*' 'tests/*' --output-file coverage.info \
+               --ignore-errors unused
+          lcov --list coverage.info
+      - name: Upload coverage to Codecov
+        if: matrix.cxx == 'g++-12'
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.info
+          fail_ci_if_error: false   # codecov outages should not fail the build
+          # If your repo is public, no token is needed. If private, add
+          # CODECOV_TOKEN as a repo secret and uncomment the line below.
+          # token: ${{ secrets.CODECOV_TOKEN }}
+
+  macos:
+    name: macOS (clang)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: make
+      - name: Tests
+        run: make run-tests
+
+  windows:
+    name: Windows (MinGW)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        shell: bash
+        run: make
+      - name: Tests
+        shell: bash
+        run: make run-tests

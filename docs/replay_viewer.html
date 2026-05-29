@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<!--
+  replay_viewer.html - Input-trace viewer for si_pro .rpl files.
+
+  Single self-contained HTML+CSS+JS file. No build step, no
+  dependencies, no server. Open it in any browser, drag-and-drop or
+  pick a .rpl file, and inspect:
+
+    * the replay's header metadata
+    * the count and types of inputs over time
+    * the player's x-position trajectory (derived from the masks)
+    * a clickable per-tick timeline
+
+  This is NOT a game-state replay - that would require porting the
+  C++ game loop to JS. For the actual visual replay, use
+  `si_pro --replay file.rpl` in the terminal.
+
+  No external assets, no fonts, no images. Drop it on any USB stick.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>si_pro replay viewer</title>
+<style>
+:root {
+  --bg:        #0e1014;
+  --panel:     #1a1d24;
+  --line:     #2a2f3a;
+  --fg:        #e8e8ec;
+  --dim:       #8a8e98;
+  --accent:    #6cb6ff;
+  --p1:        #6cb6ff;
+  --p2:        #d18cff;
+  --green:     #5cd28a;
+  --red:       #ff6b6b;
+  --yellow:    #ffd86b;
+  --mono:      "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 24px;
+  background: var(--bg); color: var(--fg);
+  font-family: var(--mono); font-size: 14px;
+  line-height: 1.5;
+}
+h1 { font-size: 22px; margin: 0 0 4px; color: var(--accent); }
+.sub { color: var(--dim); margin-bottom: 24px; }
+.drop {
+  border: 2px dashed var(--line); border-radius: 8px;
+  padding: 40px; text-align: center; cursor: pointer;
+  background: var(--panel); transition: border-color .15s;
+}
+.drop.dragover { border-color: var(--accent); }
+.drop p { margin: 4px 0; }
+.drop .hint { color: var(--dim); font-size: 12px; }
+input[type=file] { display: none; }
+.grid {
+  display: grid; gap: 16px;
+  grid-template-columns: 1fr 1fr; margin-top: 24px;
+}
+.panel {
+  background: var(--panel); border-radius: 6px;
+  padding: 14px 18px;
+}
+.panel h2 {
+  margin: 0 0 8px;
+  font-size: 13px; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--dim);
+}
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+table td { padding: 3px 0; }
+table td:first-child { color: var(--dim); padding-right: 16px; }
+.full { grid-column: 1 / -1; }
+canvas {
+  display: block; width: 100%; background: #0a0c10;
+  border-radius: 4px; image-rendering: pixelated;
+}
+.legend { display: flex; gap: 18px; font-size: 12px; margin-top: 8px; }
+.legend span::before {
+  content: ''; display: inline-block; width: 10px; height: 10px;
+  margin-right: 6px; vertical-align: middle; border-radius: 2px;
+}
+.legend .l-p1::before { background: var(--p1); }
+.legend .l-p2::before { background: var(--p2); }
+.legend .l-shoot::before { background: var(--green); }
+.legend .l-pause::before { background: var(--yellow); }
+.legend .l-quit::before  { background: var(--red); }
+.bar {
+  height: 6px; background: var(--line); border-radius: 3px;
+  overflow: hidden; margin-top: 4px;
+}
+.bar > i {
+  display: block; height: 100%; background: var(--accent);
+}
+.error { color: var(--red); margin-top: 12px; }
+.tabs { display: flex; gap: 8px; margin: 16px 0 8px; }
+.tab {
+  background: var(--panel); border: 1px solid var(--line);
+  padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;
+  color: var(--dim);
+}
+.tab.active { color: var(--fg); border-color: var(--accent); }
+.hidden { display: none; }
+.scrubber {
+  width: 100%; -webkit-appearance: none; appearance: none;
+  height: 4px; background: var(--line); border-radius: 2px; outline: none;
+  margin: 12px 0;
+}
+.scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 12px; height: 12px; border-radius: 50%; background: var(--accent);
+  cursor: pointer;
+}
+.scrubber::-moz-range-thumb {
+  width: 12px; height: 12px; border-radius: 50%; background: var(--accent);
+  border: none; cursor: pointer;
+}
+button.btn {
+  background: var(--panel); border: 1px solid var(--line);
+  color: var(--fg); padding: 6px 12px; border-radius: 4px;
+  font-family: var(--mono); cursor: pointer;
+}
+button.btn:hover { border-color: var(--accent); }
+.frame {
+  display: flex; align-items: center; gap: 8px;
+  font-variant-numeric: tabular-nums;
+}
+</style>
+</head>
+<body>
+
+<h1>si_pro replay viewer</h1>
+<p class="sub">Inspect <code>.rpl</code> input traces in your browser.
+Drag a file or click below. Nothing is uploaded; everything runs locally.</p>
+
+<label class="drop" id="drop" for="file">
+  <p><strong>Drop a <code>.rpl</code> file here</strong></p>
+  <p class="hint">or click to choose</p>
+  <input type="file" id="file" accept=".rpl,.txt">
+</label>
+
+<div id="errBox" class="error hidden"></div>
+<div id="results" class="hidden">
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Header</h2>
+      <table id="header">
+        <tr><td>Player</td><td id="h-player">—</td></tr>
+        <tr><td>Mode</td><td id="h-mode">—</td></tr>
+        <tr><td>Difficulty</td><td id="h-diff">—</td></tr>
+        <tr><td>Seed</td><td id="h-seed">—</td></tr>
+        <tr><td>Frames</td><td id="h-frames">—</td></tr>
+        <tr><td>Duration</td><td id="h-duration">—</td></tr>
+        <tr><td>Expected score</td><td id="h-exp-score">—</td></tr>
+        <tr><td>Expected level</td><td id="h-exp-level">—</td></tr>
+      </table>
+    </div>
+    <div class="panel">
+      <h2>Input mix</h2>
+      <table id="mix">
+        <tr><td>P1 LEFT</td>  <td id="m-p1-l">—</td></tr>
+        <tr><td>P1 RIGHT</td> <td id="m-p1-r">—</td></tr>
+        <tr><td>P1 SHOOT</td> <td id="m-p1-s">—</td></tr>
+        <tr><td>P2 LEFT</td>  <td id="m-p2-l">—</td></tr>
+        <tr><td>P2 RIGHT</td> <td id="m-p2-r">—</td></tr>
+        <tr><td>P2 SHOOT</td> <td id="m-p2-s">—</td></tr>
+        <tr><td>PAUSE / QUIT</td> <td id="m-pq">—</td></tr>
+        <tr><td>Idle ticks</td>   <td id="m-idle">—</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="timeline">Timeline</button>
+    <button class="tab" data-tab="trajectory">X-position over time</button>
+  </div>
+
+  <div id="tab-timeline" class="panel full">
+    <h2>Input timeline</h2>
+    <canvas id="cTimeline" height="200"></canvas>
+    <div class="legend">
+      <span class="l-p1">P1 LEFT/RIGHT</span>
+      <span class="l-p2">P2 LEFT/RIGHT</span>
+      <span class="l-shoot">SHOOT</span>
+      <span class="l-pause">PAUSE</span>
+      <span class="l-quit">QUIT</span>
+    </div>
+  </div>
+
+  <div id="tab-trajectory" class="panel full hidden">
+    <h2>Player x-position (derived from inputs)</h2>
+    <canvas id="cTraj" height="220"></canvas>
+    <div class="legend">
+      <span class="l-p1">P1 x</span>
+      <span class="l-p2">P2 x</span>
+    </div>
+  </div>
+
+  <div class="panel full">
+    <h2>Frame scrubber</h2>
+    <input type="range" id="scrub" class="scrubber" min="0" value="0">
+    <div class="frame">
+      <button class="btn" id="prev">‹ prev</button>
+      <button class="btn" id="next">next ›</button>
+      <span style="color:var(--dim)">tick</span>
+      <span id="scrub-tick">0</span>
+      <span style="color:var(--dim);margin-left:16px">P1 mask</span>
+      <span id="scrub-p1">0x00</span>
+      <span style="color:var(--dim);margin-left:16px">P2 mask</span>
+      <span id="scrub-p2">0x00</span>
+      <span style="color:var(--dim);margin-left:16px">decoded</span>
+      <span id="scrub-decoded">—</span>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// Mask bits - kept in sync with src/core/action.h
+const ACT = {
+  LEFT:    1 << 0,
+  RIGHT:   1 << 1,
+  SHOOT:   1 << 2,
+  PAUSE:   1 << 3,
+  QUIT:    1 << 4,
+  CONSOLE: 1 << 5,
+};
+const TICK_MS = 80;              // si_pro frame timing - matches FRAME_MS
+const W = 70;                    // playfield width - matches constants.h
+
+let replay = null;               // { seed, diff, mode, player, expScore,
+                                 //   expLevel, frames: [{tick,p1,p2}, ...] }
+
+// -------- file load ----------
+const drop = document.getElementById('drop');
+const fileInput = document.getElementById('file');
+
+['dragenter','dragover'].forEach(e =>
+  drop.addEventListener(e, ev => {
+    ev.preventDefault(); drop.classList.add('dragover');
+  }));
+['dragleave','drop'].forEach(e =>
+  drop.addEventListener(e, ev => {
+    ev.preventDefault(); drop.classList.remove('dragover');
+  }));
+drop.addEventListener('drop', ev => {
+  ev.preventDefault();
+  if (ev.dataTransfer.files.length) loadFile(ev.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', ev => {
+  if (ev.target.files.length) loadFile(ev.target.files[0]);
+});
+
+function loadFile(f) {
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      replay = parse(r.result);
+      showError(null);
+      render();
+    } catch (e) {
+      showError(e.message || String(e));
+    }
+  };
+  r.onerror = () => showError('Failed to read file.');
+  r.readAsText(f);
+}
+
+function showError(msg) {
+  const box = document.getElementById('errBox');
+  if (!msg) { box.classList.add('hidden'); return; }
+  box.textContent = 'Error: ' + msg;
+  box.classList.remove('hidden');
+}
+
+// -------- parser ----------
+// Mirrors src/persistence/replay_file.cpp. Accepts both classic "tick p1 p2"
+// lines and "RUN n p1 p2 start" lines. The header is one line of
+// whitespace-separated key=value tokens after the literal "HEADER".
+function parse(text) {
+  const lines = text.split(/\r?\n/);
+  if (!lines.length || !lines[0].startsWith('HEADER ')) {
+    throw new Error('Not a replay file (missing HEADER line)');
+  }
+  const out = {
+    seed: 0, diff: 0, mode: '?', player: '?',
+    expScore: -1, expLevel: -1, frames: []
+  };
+  for (const tok of lines[0].split(/\s+/).slice(1)) {
+    const eq = tok.indexOf('=');
+    if (eq < 0) continue;
+    const k = tok.slice(0, eq);
+    const v = tok.slice(eq + 1);
+    if      (k === 'seed')   out.seed     = parseInt(v, 10);
+    else if (k === 'diff')   out.diff     = parseInt(v, 10);
+    else if (k === 'mode')   out.mode     = v;
+    else if (k === 'player') out.player   = v;
+    else if (k === 'score')  out.expScore = parseInt(v, 10);
+    else if (k === 'level')  out.expLevel = parseInt(v, 10);
+  }
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const parts = line.split(/\s+/);
+    if (parts[0] === 'RUN') {
+      const n = +parts[1], p1 = +parts[2], p2 = +parts[3], start = +parts[4];
+      for (let k = 0; k < n; k++)
+        out.frames.push({ tick: start + k, p1, p2 });
+    } else {
+      const t = +parts[0], p1 = +parts[1], p2 = +parts[2];
+      if (!Number.isFinite(t)) continue;
+      out.frames.push({ tick: t, p1, p2 });
+    }
+  }
+  // Sort just in case (shouldn't be needed but cheap insurance).
+  out.frames.sort((a, b) => a.tick - b.tick);
+  return out;
+}
+
+// -------- render ----------
+function diffName(i) {
+  return ['I\'M TOO YOUNG TO DIE','HURT ME PLENTY',
+          'ULTRA-VIOLENCE','NIGHTMARE','ULTRA-NIGHTMARE'][i] || '?';
+}
+function fmtDuration(ticks) {
+  const ms = ticks * TICK_MS;
+  const s  = Math.floor(ms / 1000);
+  const mm = Math.floor(s / 60);
+  const ss = s % 60;
+  return `${mm}m ${ss.toString().padStart(2,'0')}s  (${ticks} ticks @ ${TICK_MS}ms)`;
+}
+function decodeMask(m) {
+  const names = [];
+  if (m & ACT.LEFT)    names.push('LEFT');
+  if (m & ACT.RIGHT)   names.push('RIGHT');
+  if (m & ACT.SHOOT)   names.push('SHOOT');
+  if (m & ACT.PAUSE)   names.push('PAUSE');
+  if (m & ACT.QUIT)    names.push('QUIT');
+  if (m & ACT.CONSOLE) names.push('CONSOLE');
+  return names.length ? names.join('+') : '—';
+}
+
+function render() {
+  document.getElementById('results').classList.remove('hidden');
+  // Header
+  document.getElementById('h-player').textContent = replay.player;
+  document.getElementById('h-mode').textContent   = replay.mode;
+  document.getElementById('h-diff').textContent   =
+    `${replay.diff + 1}  (${diffName(replay.diff)})`;
+  document.getElementById('h-seed').textContent   = replay.seed.toString();
+  const maxTick = replay.frames.length ?
+                  replay.frames[replay.frames.length - 1].tick : 0;
+  document.getElementById('h-frames').textContent   = replay.frames.length;
+  document.getElementById('h-duration').textContent = fmtDuration(maxTick + 1);
+  document.getElementById('h-exp-score').textContent =
+    replay.expScore < 0 ? '—' : replay.expScore.toString();
+  document.getElementById('h-exp-level').textContent =
+    replay.expLevel < 0 ? '—' : replay.expLevel.toString();
+
+  // Input mix
+  let p1l=0, p1r=0, p1s=0, p2l=0, p2r=0, p2s=0, pq=0, idle=0;
+  for (const f of replay.frames) {
+    if (f.p1 & ACT.LEFT)  p1l++;
+    if (f.p1 & ACT.RIGHT) p1r++;
+    if (f.p1 & ACT.SHOOT) p1s++;
+    if (f.p2 & ACT.LEFT)  p2l++;
+    if (f.p2 & ACT.RIGHT) p2r++;
+    if (f.p2 & ACT.SHOOT) p2s++;
+    if ((f.p1 | f.p2) & (ACT.PAUSE | ACT.QUIT)) pq++;
+    if (f.p1 === 0 && f.p2 === 0) idle++;
+  }
+  const setM = (id, n) => document.getElementById(id).textContent =
+    `${n}  (${(100 * n / replay.frames.length).toFixed(1)}%)`;
+  setM('m-p1-l', p1l); setM('m-p1-r', p1r); setM('m-p1-s', p1s);
+  setM('m-p2-l', p2l); setM('m-p2-r', p2r); setM('m-p2-s', p2s);
+  setM('m-pq',   pq);
+  setM('m-idle', idle);
+
+  drawTimeline();
+  drawTrajectory();
+  setupScrubber();
+}
+
+function getCtx(id) {
+  const c = document.getElementById(id);
+  // Make the canvas its CSS pixel size at device pixel ratio.
+  const r = c.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  c.width  = Math.floor(r.width  * dpr);
+  c.height = Math.floor(c.height * dpr);
+  const ctx = c.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return { ctx, w: r.width, h: c.height / dpr };
+}
+
+function drawTimeline() {
+  const { ctx, w, h } = getCtx('cTimeline');
+  ctx.fillStyle = '#0a0c10'; ctx.fillRect(0, 0, w, h);
+  if (!replay.frames.length) return;
+  const maxTick = replay.frames[replay.frames.length - 1].tick;
+  const tx = t => (t / maxTick) * w;
+
+  // P1 horizontal motion
+  ctx.fillStyle = '#6cb6ff'; ctx.globalAlpha = 0.8;
+  for (const f of replay.frames) {
+    if (f.p1 & (ACT.LEFT | ACT.RIGHT))
+      ctx.fillRect(tx(f.tick), 20, 1.5, 36);
+  }
+  // P2 horizontal motion
+  ctx.fillStyle = '#d18cff';
+  for (const f of replay.frames) {
+    if (f.p2 & (ACT.LEFT | ACT.RIGHT))
+      ctx.fillRect(tx(f.tick), 70, 1.5, 36);
+  }
+  // Shoots from either player
+  ctx.fillStyle = '#5cd28a';
+  for (const f of replay.frames) {
+    if ((f.p1 | f.p2) & ACT.SHOOT)
+      ctx.fillRect(tx(f.tick), 120, 1.5, 28);
+  }
+  // Pause + quit
+  ctx.fillStyle = '#ffd86b';
+  for (const f of replay.frames)
+    if ((f.p1 | f.p2) & ACT.PAUSE)
+      ctx.fillRect(tx(f.tick), 160, 1.5, 16);
+  ctx.fillStyle = '#ff6b6b';
+  for (const f of replay.frames)
+    if ((f.p1 | f.p2) & ACT.QUIT)
+      ctx.fillRect(tx(f.tick), 180, 2, 16);
+
+  // Axis hints
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#8a8e98'; ctx.font = '11px monospace';
+  ctx.fillText('P1',       4,   16);
+  ctx.fillText('P2',       4,   66);
+  ctx.fillText('SHOOT',    4, 116);
+  ctx.fillText('PAUSE',    4, 156);
+  ctx.fillText('QUIT',     4, 176);
+
+  // Tick markers along the bottom
+  ctx.strokeStyle = '#2a2f3a';
+  for (let i = 0; i <= 10; i++) {
+    const x = (i / 10) * w;
+    ctx.beginPath(); ctx.moveTo(x, 196); ctx.lineTo(x, 200); ctx.stroke();
+    if (i % 2 === 0) {
+      const t = Math.floor((i / 10) * maxTick);
+      ctx.fillText(t.toString(), x + 2, 196);
+    }
+  }
+}
+
+// Derive each player's x-position purely from the input masks.
+// We don't know spawn positions exactly but we know si_pro starts P1 at
+// W/2 and P2 at W/2 + 4. We clamp to [1, W-2].
+function deriveX() {
+  const x1 = new Int16Array(replay.frames.length);
+  const x2 = new Int16Array(replay.frames.length);
+  let p1 = (W >> 1), p2 = (W >> 1) + 4;
+  for (let i = 0; i < replay.frames.length; i++) {
+    const f = replay.frames[i];
+    if (f.p1 & ACT.LEFT  && p1 > 1)     p1--;
+    if (f.p1 & ACT.RIGHT && p1 < W - 2) p1++;
+    if (f.p2 & ACT.LEFT  && p2 > 1)     p2--;
+    if (f.p2 & ACT.RIGHT && p2 < W - 2) p2++;
+    x1[i] = p1;
+    x2[i] = p2;
+  }
+  return { x1, x2 };
+}
+
+function drawTrajectory() {
+  const { ctx, w, h } = getCtx('cTraj');
+  ctx.fillStyle = '#0a0c10'; ctx.fillRect(0, 0, w, h);
+  if (!replay.frames.length) return;
+  const { x1, x2 } = deriveX();
+  const n = x1.length;
+  const x = i => (i / Math.max(1, n - 1)) * w;
+  const y = px => h - (px / W) * (h - 10) - 5;
+
+  // gridlines
+  ctx.strokeStyle = '#2a2f3a'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 10; i++) {
+    const yy = (i / 10) * h;
+    ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(w, yy); ctx.stroke();
+  }
+
+  // P1
+  ctx.strokeStyle = '#6cb6ff'; ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for (let i = 0; i < n; i++) {
+    if (i === 0) ctx.moveTo(x(i), y(x1[i]));
+    else         ctx.lineTo(x(i), y(x1[i]));
+  }
+  ctx.stroke();
+
+  // P2 - only if any P2 input was ever issued
+  const anyP2 = replay.frames.some(f => f.p2 !== 0);
+  if (anyP2) {
+    ctx.strokeStyle = '#d18cff';
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      if (i === 0) ctx.moveTo(x(i), y(x2[i]));
+      else         ctx.lineTo(x(i), y(x2[i]));
+    }
+    ctx.stroke();
+  }
+
+  // axis labels
+  ctx.fillStyle = '#8a8e98'; ctx.font = '11px monospace';
+  ctx.fillText('left edge',   4, h - 4);
+  ctx.fillText('right edge',  4, 14);
+}
+
+function setupScrubber() {
+  const s = document.getElementById('scrub');
+  s.max = replay.frames.length - 1;
+  s.value = 0;
+  s.oninput = () => updateScrub(+s.value);
+  document.getElementById('prev').onclick = () => {
+    if (s.value > 0) { s.value = +s.value - 1; updateScrub(+s.value); }
+  };
+  document.getElementById('next').onclick = () => {
+    if (+s.value < replay.frames.length - 1) {
+      s.value = +s.value + 1; updateScrub(+s.value);
+    }
+  };
+  updateScrub(0);
+}
+function updateScrub(idx) {
+  const f = replay.frames[idx];
+  const hex = m => '0x' + m.toString(16).padStart(2, '0');
+  document.getElementById('scrub-tick').textContent = f.tick;
+  document.getElementById('scrub-p1').textContent   = hex(f.p1);
+  document.getElementById('scrub-p2').textContent   = hex(f.p2);
+  let s = `P1=${decodeMask(f.p1)}`;
+  if (f.p2) s += `  P2=${decodeMask(f.p2)}`;
+  document.getElementById('scrub-decoded').textContent = s;
+}
+
+// tabs
+document.querySelectorAll('.tab').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('tab-timeline').classList.toggle(
+      'hidden', t.dataset.tab !== 'timeline');
+    document.getElementById('tab-trajectory').classList.toggle(
+      'hidden', t.dataset.tab !== 'trajectory');
+    // Recompute on tab switch since canvas may have resized.
+    if (t.dataset.tab === 'timeline')   drawTimeline();
+    if (t.dataset.tab === 'trajectory') drawTrajectory();
+  };
+});
+
+// Re-render on window resize so canvas pixel ratio stays correct.
+window.addEventListener('resize', () => {
+  if (replay) { drawTimeline(); drawTrajectory(); }
+});
+</script>
+</body>
+</html>
