@@ -352,7 +352,7 @@ int main_sdl3(int argc, char** argv) {
     SDL_Window*   window   = nullptr;
     SDL_Renderer* renderer = nullptr;
     if (!SDL_CreateWindowAndRenderer(
-            "Space Invaders - Pro Edition (SDL3)",
+            "Space Invaders - Pro Edition",
             SDL3Renderer::WIN_W, SDL3Renderer::WIN_H,
             SDL_WINDOW_RESIZABLE, &window, &renderer)) {
         std::fprintf(stderr, "SDL_CreateWindowAndRenderer failed: %s\n",
