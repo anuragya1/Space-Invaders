@@ -100,6 +100,8 @@ void Game::apply_action(std::uint8_t m, Player& p) {
             ++statsRef_.shotsFired;
             ++run_shots_fired;
             bullets.emplace_back(p.pos.x, p.pos.y - 1, -1, p.id);
+            emit_event(GameEvent{GameEventType::BulletFired, tick_,
+                                 p.id, p.pos.x, p.pos.y - 1});
             if (p.power == PUType::TRIPLE) {
                 if (p.pos.x > 2)
                     bullets.emplace_back(p.pos.x - 1, p.pos.y - 1, -1, p.id);
@@ -111,7 +113,8 @@ void Game::apply_action(std::uint8_t m, Player& p) {
 }
 
 void Game::handle_console() {
-    // Pause-and-prompt mini REPL. Used for live debugging during the demo.
+    // Pause-and-prompt mini REPL. Useful when testing gameplay scenarios
+    // without recompiling or hand-playing up to the exact state.
     // Commands: /spawn ufo | /kill all | /level <n> | /lives <n> | /help
     paused_ = true;
     render();  // make sure the world is on screen
@@ -143,6 +146,7 @@ void Game::handle_console() {
 }
 
 void Game::step(std::uint8_t m1, std::uint8_t m2) {
+    events_.clear();
     if (m1 & action::QUIT) { gameOver_ = true; quitFlag_ = true; return; }
     if (m2 & action::QUIT) { gameOver_ = true; quitFlag_ = true; return; }
     if (m1 & action::PAUSE) paused_ = !paused_;
@@ -289,6 +293,11 @@ bool Game::all_dead() const {
                         [](const Alien& a) { return a.alive; });
 }
 
+void Game::emit_event(GameEvent e) {
+    e.tick = tick_;
+    events_.push_back(e);
+}
+
 SaveState Game::run_headless(IInputSource* p1, IInputSource* p2,
                              std::uint32_t max_ticks) {
     // No render, no sleep, no stdout. Just simulate.
@@ -309,8 +318,8 @@ SaveState Game::run_headless(IInputSource* p1, IInputSource* p2,
 
 void Game::set_director_modifiers(float shootMul, float moveMul,
                                    float dropMul) {
-    // Clamp to safe ranges. The Director should NEVER be able to make
-    // the game unwinnable or trivially easy.
+    // Keep adaptive difficulty within boring-but-safe bounds. The
+    // Director can change pacing, but it should not take over the game.
     auto clamp = [](float v, float lo, float hi) {
         return v < lo ? lo : (v > hi ? hi : v);
     };

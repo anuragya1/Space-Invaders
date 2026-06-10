@@ -1,8 +1,8 @@
 // logger.h - leveled, thread-safe logging to file.
 //
-// New in this version. Used by net/ai/replay modules to record events
-// that would otherwise be invisible (e.g. handshake bytes, AI decisions).
-// Crucial for debugging the lockstep network protocol.
+// Used by net/ai/replay modules to record events that would otherwise be
+// invisible, such as handshake bytes or AI decisions. This is especially
+// useful when debugging lockstep networking.
 //
 // Usage:
 //     LOG_INFO("server listening on " << port);
@@ -51,8 +51,8 @@ private:
 // windows.h defines ERROR and (in some configurations) DEBUG as macros,
 // which would silently corrupt our LogLevel enum. We can't always control
 // header include order in client code, so undef them here defensively.
-// This is the standard workaround documented in every cross-platform
-// project that includes <windows.h>.
+// Undefining them here keeps this header usable even when a platform
+// header was included first.
 #ifdef ERROR
 #  undef ERROR
 #endif

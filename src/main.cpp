@@ -56,11 +56,11 @@ int main(int argc, char** argv) {
     platform::enable_ansi();
     platform::net_init();
 
-    // ---- load config (optional) ----
+    // Config is optional; defaults are good enough for a first run.
     Config cfg;
     load_config("si_pro.cfg", cfg);
 
-    // ---- parse CLI flags ----
+    // CLI flags either override config or select a non-menu tool mode.
     CliArgs args;
     if (!parse_args(argc, argv, args)) {
         print_help(argv[0]);
@@ -84,12 +84,11 @@ int main(int argc, char** argv) {
     if (!args.log_level.empty())  cfg.log_level  = args.log_level;
     if (args.seed != 0)           cfg.ai_seed    = args.seed;
 
-    // ---- propagate UI options to the global the renderer reads ----
+    // Terminal rendering reads these process-wide UI options.
     ui::opts().colorblind = cfg.colorblind;
     ui::opts().sound      = cfg.sound;
     i18n::set_language(cfg.language);
 
-    // ---- configure logger ----
     // Append PID to the log filename so co-located processes (host + client
     // on the same machine for loopback testing) don't clobber each other.
     std::string log_path = cfg.log_file;
@@ -107,7 +106,6 @@ int main(int argc, char** argv) {
     Logger::get().configure(parse_log_level(cfg.log_level), log_path);
     LOG_INFO("si_pro start");
 
-    // ---- get user (CLI flag, or prompt) ----
     // Headless modes don't need a callsign; only the interactive menu
     // and the player-driven modes (host/join/replay viewing/ai-demo) do.
     bool needs_user = (args.mode == CliMode::MENU
@@ -125,7 +123,7 @@ int main(int argc, char** argv) {
     user = sanitize_username(user);
     LOG_INFO("user=" << user);
 
-    // ---- load per-user state ----
+    // Load the user's persistent files after we know the final callsign.
     Record    rec   = record_read(user);
     SaveState saved = save_read  (user);
     Stats     stats = stats_read (user);

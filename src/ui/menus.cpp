@@ -31,7 +31,7 @@
 
 namespace si {
 
-// ---- helpers ----
+// Small terminal-menu helpers.
 
 static std::uint32_t pick_seed(std::uint32_t override) {
     return (override != 0) ? override : (std::uint32_t)std::time(nullptr);
@@ -77,7 +77,7 @@ static void post_game(Game& game, const SaveState& res,
     }
 }
 
-// ---- solo ----
+// Solo terminal run.
 
 void run_solo(int diffIdx, const std::string& user, Record& rec,
               SaveState& saved, Stats& stats,
@@ -128,7 +128,6 @@ void run_from_save(const SaveState& s, const std::string& user, Record& rec,
     }
 }
 
-// ---- AI demo ----
 // A small multiplexer source that mostly returns AI output, but lets
 // the human press Q to exit.
 namespace {
@@ -180,7 +179,7 @@ void run_ai_demo(int diffIdx, const std::string& user,
     }
 }
 
-// ---- replay ----
+// Terminal replay playback.
 
 void run_replay(const std::string& path, Stats& stats,
                 std::vector<Achievement>& ach, const std::string& user) {
@@ -202,7 +201,7 @@ void run_replay(const std::string& path, Stats& stats,
     (void)user;
 }
 
-// ---- network co-op ----
+// Terminal network co-op.
 
 void run_host(int diffIdx, const std::string& user,
               Stats& stats, std::vector<Achievement>& ach,
@@ -299,7 +298,7 @@ void run_join(const std::string& user, const std::string& ip,
     Logger::get().set_tag("");
 }
 
-// ---- AI training (headless) ----
+// Headless AI training.
 
 int run_train_ai(int n, int diffIdx, const std::string& ai_profile) {
     std::ofstream f("ai_train.csv");
@@ -334,7 +333,7 @@ int run_train_ai(int n, int diffIdx, const std::string& ai_profile) {
     return 0;
 }
 
-// ---- settings (interactive, in-game) ----
+// Terminal settings screen.
 
 void show_settings(Config& cfg) {
     using i18n::tr;
@@ -429,7 +428,7 @@ void show_settings(Config& cfg) {
     }
 }
 
-// ---- credits screen ----
+// Credits screen.
 
 void show_credits() {
     using i18n::tr;
@@ -456,7 +455,7 @@ void show_credits() {
     std::cout << "\n\n  Press ENTER..."; std::cin.get();
 }
 
-// ---- main menu ----
+// Main terminal menu.
 
 void run_menu(const Config& cfg, const std::string& user, Record& rec,
               SaveState& saved, Stats& stats,

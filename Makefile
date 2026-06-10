@@ -103,7 +103,7 @@ SDL3_EXTRA_SRCS = \
 
 SDL3_EXTRA_OBJS = $(SDL3_EXTRA_SRCS:.cpp=.o)
 
-TESTS = test_rng test_replay test_level test_ai test_determinism
+TESTS = test_rng test_replay test_level test_config test_ai test_director test_events test_determinism
 TEST_BINS = $(addprefix build/tests/, $(TESTS))
 
 all: $(BIN)
@@ -148,6 +148,9 @@ tests: $(TEST_BINS)
 
 build/tests/%: tests/%.cpp $(CORE_OBJS) | build/tests
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $< $(CORE_OBJS) $(LDLIBS)
+
+build/tests/test_director: tests/test_director.cpp src/director/director.cpp $(CORE_OBJS) | build/tests
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $< src/director/director.cpp $(CORE_OBJS) $(LDLIBS)
 
 build/tests:
 	@mkdir -p $@

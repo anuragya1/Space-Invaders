@@ -89,9 +89,7 @@ Rgba colorFromShield(char c) {
 
 } // namespace
 
-// =========================================================================
-// Construction and per-tick state hooks
-// =========================================================================
+// Construction and per-tick renderer hooks.
 
 SDL3Renderer::SDL3Renderer()
     : shakeRng_(0xBEEF) {
@@ -114,7 +112,8 @@ void SDL3Renderer::pre_step(const Game& g) {
 }
 
 void SDL3Renderer::post_step(const Game& g) {
-    // New explosions → spawn particles + shake.
+    // New explosions spawn particles and, unless reduced motion is on,
+    // add a small shake kick.
     if (g.explosions.size() > lastExplosionCount_) {
         for (std::size_t i = lastExplosionCount_;
              i < g.explosions.size(); ++i) {
@@ -123,28 +122,30 @@ void SDL3Renderer::post_step(const Game& g) {
         }
         // Cumulative kick for batch explosions; capped via SHAKE_MAX.
         const std::size_t newOnes = g.explosions.size() - lastExplosionCount_;
-        shakeAmount_ += SHAKE_EXPLOSION * static_cast<float>(newOnes);
+        if (!reducedMotion_) {
+            shakeAmount_ += SHAKE_EXPLOSION * static_cast<float>(newOnes);
+        }
     }
     lastExplosionCount_ = g.explosions.size();
 
-    // Player took a hit?
+    // Player hits get a stronger feedback burst than normal explosions.
     if (g.player.lives < lastPlayerLives_) {
-        shakeAmount_ += SHAKE_PLAYER_HIT;
+        if (!reducedMotion_) shakeAmount_ += SHAKE_PLAYER_HIT;
         particles_.spawn_explosion(g.player.pos.x, g.player.pos.y,
                                    C_PLAYER.r, C_PLAYER.g, C_PLAYER.b, 24);
     }
     lastPlayerLives_ = g.player.lives;
 
     if (g.hasP2 && g.player2.lives < lastPlayer2Lives_) {
-        shakeAmount_ += SHAKE_PLAYER_HIT;
+        if (!reducedMotion_) shakeAmount_ += SHAKE_PLAYER_HIT;
         particles_.spawn_explosion(g.player2.pos.x, g.player2.pos.y,
                                    C_PLAYER2.r, C_PLAYER2.g, C_PLAYER2.b, 24);
     }
     lastPlayer2Lives_ = g.player2.lives;
 
-    // Boss took a hit?
+    // Boss hits get sparks and a short hit flash.
     if (g.boss.active && lastBossHp_ > 0 && g.boss.hp < lastBossHp_) {
-        shakeAmount_ += SHAKE_BOSS_HIT;
+        if (!reducedMotion_) shakeAmount_ += SHAKE_BOSS_HIT;
         Rgba bc = colorFromBoss(g.boss);
         particles_.spawn_spark(g.boss.x, g.boss.y, +1,
                                bc.r, bc.g, bc.b, 10);
@@ -179,6 +180,12 @@ void SDL3Renderer::tick_render(float dtSec) {
 
     // Wall-clock for animation cycles.
     renderTime_ += dtSec;
+
+    if (reducedMotion_) {
+        shakeAmount_ = 0.0f;
+        shakeOffX_ = 0.0f;
+        shakeOffY_ = 0.0f;
+    }
 
     // Decay screen shake.
     if (shakeAmount_ > 0.0f) {
@@ -236,9 +243,16 @@ void SDL3Renderer::on_restart(const Game& g) {
     prev_.valid = false;
 }
 
-// =========================================================================
-// Drawing primitives
-// =========================================================================
+void SDL3Renderer::set_reduced_motion(bool enabled) {
+    reducedMotion_ = enabled;
+    if (reducedMotion_) {
+        shakeAmount_ = 0.0f;
+        shakeOffX_ = 0.0f;
+        shakeOffY_ = 0.0f;
+    }
+}
+
+// Low-level drawing helpers.
 
 void SDL3Renderer::draw_cell(SDL_Renderer* ren, int cx, int cy, Rgba col,
                               float pad) {
@@ -293,9 +307,7 @@ void SDL3Renderer::draw_text_centered(SDL_Renderer* ren, const std::string& msg,
     draw_text(ren, msg, cx - w * 0.5f, y, scale);
 }
 
-// =========================================================================
-// Entity draws
-// =========================================================================
+// Entity drawing.
 
 void SDL3Renderer::draw_stars(SDL_Renderer* ren, const std::vector<Star>& stars) {
     // Stars don't shake -- they're "far away."
@@ -412,7 +424,7 @@ void SDL3Renderer::draw_ufo(SDL_Renderer* ren, const UFO& u, int prevX,
     const float baseX = bx + shakeOffX_;
     const float baseY = static_cast<float>(py(UFO_Y)) + shakeOffY_;
 
-    // ---- Pulsing emission ring (alpha-blended halo) ----
+    // Soft halo so the UFO reads as a bonus target, not another alien.
     SDL_BlendMode prevBM = SDL_BLENDMODE_NONE;
     SDL_GetRenderDrawBlendMode(ren, &prevBM);
     SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
@@ -432,13 +444,13 @@ void SDL3Renderer::draw_ufo(SDL_Renderer* ren, const UFO& u, int prevX,
     }
     SDL_SetRenderDrawBlendMode(ren, prevBM);
 
-    // ---- The UFO sprite itself (32x16). Tint brightens with pulse. ----
+    // Brighten the UFO with the same pulse used by the halo.
     const std::uint8_t tintBoost = static_cast<std::uint8_t>(
         std::min(255.0f, 200.0f + 55.0f * pulse));
     blit_sprite(ren, UFO_SPRITE, baseX, baseY, 1.0f,
                 tintBoost, tintBoost, tintBoost);
 
-    // ---- Particle trail behind the UFO ----
+    // A tiny trail makes the UFO feel faster without touching gameplay.
     if (ufoTrailTimer_ <= 0.0f) {
         ufoTrailTimer_ = 0.06f;
         const int spawnCellX = u.x - u.dir;
@@ -458,7 +470,7 @@ void SDL3Renderer::draw_boss(SDL_Renderer* ren, const Boss& b,
     const float bx = px_f(fx - 2);     // body extends 2 cells left of center
     const float by = py_f(fy);
 
-    // ---- Boss intro: slide-in + alpha fade for the first ~0.7 seconds ----
+    // Boss intro: slide down first, then fade in.
     SDL_BlendMode prevBM = SDL_BLENDMODE_NONE;
     SDL_GetRenderDrawBlendMode(ren, &prevBM);
 
@@ -466,11 +478,11 @@ void SDL3Renderer::draw_boss(SDL_Renderer* ren, const Boss& b,
     std::uint8_t alphaByte = 0;     // 0 = use sprite palette alpha
     if (bossIntroTimer_ > 0.0f) {
         if (bossIntroTimer_ > 1.0f) {
-            // Phase 1: slide down from above
+            // Slide down from above.
             const float t = (bossIntroTimer_ - 1.0f) / 0.5f;   // 1..0
             introOffsetY = -static_cast<float>(HUD_H) * t * 1.5f;
         } else {
-            // Phase 2: alpha fade 80 -> 255
+            // Fade from faint to fully opaque.
             const float t = bossIntroTimer_ / 1.0f;            // 1..0
             alphaByte = static_cast<std::uint8_t>(80.0f + 175.0f * (1.0f - t));
         }
@@ -485,8 +497,7 @@ void SDL3Renderer::draw_boss(SDL_Renderer* ren, const Boss& b,
                 255, 255, 255,
                 alphaByte);
 
-    // ---- Hit-flash overlay: translucent white rectangle over the sprite
-    // for ~0.3 sec after each hit. Simple and reads clearly as "got hit". ----
+    // A simple white overlay reads clearly as "the boss was hit."
     if (bossHitFlash_ > 0.0f) {
         SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
         const std::uint8_t a = static_cast<std::uint8_t>(140.0f * bossHitFlash_);
@@ -502,7 +513,7 @@ void SDL3Renderer::draw_boss(SDL_Renderer* ren, const Boss& b,
 
     SDL_SetRenderDrawBlendMode(ren, prevBM);
 
-    // ---- Wide HP bar at top of playfield ----
+    // Wide HP bar at the top of the playfield.
     if (b.maxHp > 0) {
         const float barX = static_cast<float>(WIN_W) * 0.10f;
         const float barW = static_cast<float>(WIN_W) * 0.80f;
@@ -527,7 +538,7 @@ void SDL3Renderer::draw_boss(SDL_Renderer* ren, const Boss& b,
         SDL_RenderDebugText(ren, barX, barY - 12.0f, buf);
     }
 
-    // ---- "WARNING - BOSS APPROACHING" banner during intro ----
+    // Warning banner during the boss intro.
     if (bossIntroTimer_ > 0.0f) {
         SDL_SetRenderDrawBlendMode(ren, SDL_BLENDMODE_BLEND);
         const float t = bossIntroTimer_ / 1.5f;
@@ -578,9 +589,7 @@ void SDL3Renderer::draw_explosion(SDL_Renderer* ren, const Expl& e) {
     SDL_SetRenderDrawBlendMode(ren, prevBM);
 }
 
-// =========================================================================
-// HUD
-// =========================================================================
+// HUD.
 
 void SDL3Renderer::draw_hud(SDL_Renderer* ren, const Game& g) {
     // HUD does NOT shake.
@@ -596,7 +605,7 @@ void SDL3Renderer::draw_hud(SDL_Renderer* ren, const Game& g) {
     char buf[256];
 
     set_col(ren, C_HUD_TXT);
-    draw_text(ren, "SPACE INVADERS - Pro Edition (SDL3)", 14.0f, 8.0f, 2.0f);
+    draw_text(ren, "SPACE INVADERS - Pro Edition", 14.0f, 8.0f, 2.0f);
 
     std::snprintf(buf, sizeof buf, "SCORE  %06d", g.player.score);
     set_col(ren, C_PLAYER);
@@ -709,9 +718,7 @@ void SDL3Renderer::draw_ufo_banner(SDL_Renderer* ren) {
     SDL_SetRenderDrawBlendMode(ren, prevBM);
 }
 
-// =========================================================================
-// Scene composition
-// =========================================================================
+// Scene composition.
 
 void SDL3Renderer::draw(SDL_Renderer* ren, const Game& g, float alpha) {
     // Background.

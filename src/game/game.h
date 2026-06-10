@@ -5,6 +5,7 @@
 #pragma once
 
 #include "../core/entities.h"
+#include "../core/game_event.h"
 #include "../core/rng.h"
 #include "../core/difficulty.h"
 #include "../core/action.h"
@@ -48,17 +49,18 @@ public:
 
     // Accessors used by AI and tests.
     const Replay& replay() const { return rec_; }
+    const std::vector<GameEvent>& events() const { return events_; }
     int  score()      const { return player.score; }
     int  level()      const { return level_; }
     int  diff_idx()   const { return dIdx_; }
+    std::uint32_t tick() const { return tick_; }
     bool quit_flag()  const { return quitFlag_; }
 
     // Optional - if non-empty, per-level telemetry rows are written to
-    // <user>_curves.csv on each level transition. Useful for the report.
+    // <user>_curves.csv on each level transition. Handy when balancing
+    // difficulty curves or comparing AI runs.
     void set_telemetry_user(const std::string& u) { telemetry_user_ = u; }
 
-    // -------- Public stepping API (for the SDL3 windowed loop) --------
-    //
     // The terminal entry point uses run() which owns its own loop, sleep,
     // and render. The SDL3 entry point needs to drive the simulation from
     // its own event/draw loop, so we expose the underlying step and
@@ -84,8 +86,6 @@ public:
     int          flash_timer() const { return flashT_; }
     void         tick_flash_decay() { if (flashT_ > 0) --flashT_; }
 
-    // -------- Director AI hooks (SDL3 build only) --------
-    //
     // External "director" code (in src/director/) watches game state
     // and nudges these multipliers each tick to keep the player in the
     // flow zone. Defaults are 1.0 = no effect, so the terminal build
@@ -98,7 +98,7 @@ public:
     float director_move_mult()  const { return dirMoveMul_;  }
     float director_drop_mult()  const { return dirDropMul_;  }
 
-    // -------- Public game state (AI reads these) --------
+    // Public game state read by AI, renderer, and tests.
     Player                player;
     Player                player2;
     bool                  hasP2 = false;
@@ -113,7 +113,7 @@ public:
     Mode                  mode;
 
 private:
-    // ---- per-tick stages ----
+    // Per-tick simulation stages.
     void apply_action(std::uint8_t mask, Player& p);
     void step(std::uint8_t m1, std::uint8_t m2);
     void render();
@@ -134,13 +134,14 @@ private:
     void update_bullets();
     bool all_dead() const;
     void next_level();
+    void emit_event(GameEvent e);
     void flash(const std::string& m, int t = 70) { flashMsg_ = m; flashT_ = t; }
     void unlock(const std::string& key);
 
     // Cheat / console support.
     void handle_console();
 
-    // ---- internal state ----
+    // Internal run state.
     const Diff&               diff_;
     int                       dIdx_;
     int                       level_;
@@ -163,6 +164,7 @@ private:
     std::uint32_t             tick_         = 0;
     bool                      recording_    = true;
     Replay                    rec_;
+    std::vector<GameEvent>     events_;
     Stats&                    statsRef_;
     std::vector<Achievement>& achRef_;
     int                       levelStartLives_  = 0;

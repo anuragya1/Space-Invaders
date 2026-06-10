@@ -1,30 +1,16 @@
-// sdl3_audio.h - sound effects for the SDL3 windowed build.
+// sdl3_audio.h - synthesized sound for the SDL3 build.
 //
-// SYNTHESIZED, NOT FILE-LOADED
-// ============================
-// All sound effects are generated programmatically as PCM samples at
-// startup. No .wav files, no asset paths, no SDL_mixer. Arcade-style
-// blips and bloops fit perfectly with synthesis - that is how the
-// original 1978 Space Invaders made its sounds too.
+// The game generates its arcade blips at startup instead of loading
+// .wav files. That keeps the project self-contained and fits the visual
+// style. The tradeoff is that richer audio would need either more
+// synthesis work or a real asset pipeline later.
 //
-// MIXING
-// ======
-// Multiple sounds can play simultaneously (e.g. player shooting at the
-// same moment an alien dies). We open ONE SDL3 audio stream with a
-// callback that mixes a small pool of "voices" (active playing sounds)
-// every time SDL3 needs more data.
+// AudioSystem owns one SDL3 audio stream. The callback mixes a small pool
+// of active voices so a shot, explosion, and jingle can overlap.
 //
-// EVENT DETECTION
-// ===============
-// Audio triggers are detected from game-state diffs in the main loop,
-// the same way Phase 1's renderer detects events for screen shake. The
-// Game class is NOT modified - audio observes from outside.
-//
-// MUTE
-// ====
-// AudioSystem can be muted at runtime. Mute zeroes the output but keeps
-// the device open, so unmute is instant. A mute flag can be persisted
-// to si_pro.cfg later (the cfg already has a sound bool).
+// Sounds are triggered from gameplay events first, with state-diff
+// fallback kept for older paths. Audio observes the Game; it should not
+// change simulation state.
 #pragma once
 
 #include <SDL3/SDL.h>
@@ -90,27 +76,24 @@ public:
     // Was the device successfully opened?
     bool active() const { return stream_ != nullptr; }
 
-    // --- Music ---
-    // Background music is generated on the fly inside the audio callback
-    // (no pre-baked buffers). The main loop tells us what to play and
-    // how intensely; the mixer interpolates between music states for a
-    // ~0.3-second crossfade so there's no audible cut.
+    // Background music is generated in the audio callback. The main loop
+    // only tells us the desired music state and intensity; the mixer
+    // smooths transitions so menu/game/boss changes do not click.
     enum class Music {
         NONE,       // silence
         MARCH,      // the classic 4-note descending bass loop
         BOSS        // heavier 8-note pattern for boss fights
     };
-    //
-    //   intensity in [0,1]:
-    //     - MARCH: 0 = slow tempo (aliens far), 1 = fast (aliens close)
-    //     - BOSS:  ignored, always at "boss" tempo
+    // intensity in [0,1]:
+    //   MARCH: 0 = slow tempo, 1 = fastest tempo
+    //   BOSS: ignored; boss music uses its own tempo
     void set_music(Music m, float intensity);
 
     Music current_music() const { return musicTarget_; }
 
 private:
-    // SDL audio callback - drains the voice pool and mixes into 'out'.
-    // Trampolines into mix_into() on the AudioSystem instance.
+    // SDL calls this on the audio thread. It forwards into the owning
+    // AudioSystem so the mixer can use instance state.
     static void SDLCALL audio_callback(void* userdata,
                                        SDL_AudioStream* stream,
                                        int additional_amount,
@@ -120,7 +103,7 @@ private:
     // A single sound buffer: mono float32 samples at FREQ Hz.
     using Buffer = std::vector<float>;
 
-    // Synthesis helpers (all populate one Buffer).
+    // Synthesis helpers. Each returns one ready-to-play sample buffer.
     static Buffer gen_blip(float freq, float durSec, float decay);
     static Buffer gen_sweep(float startFreq, float endFreq,
                             float durSec, float decay);
@@ -132,7 +115,7 @@ private:
     // Build every Buffer in `sounds_`.
     void synthesize_all();
 
-    // ---- State ----
+    // Audio device and generated SFX buffers.
     SDL_AudioStream* stream_ = nullptr;
 
     std::array<Buffer, static_cast<std::size_t>(Sfx::COUNT)> sounds_;
@@ -150,7 +133,7 @@ private:
     static constexpr int VOICE_CAP = 8;
     std::array<Voice, VOICE_CAP> voices_{};
 
-    // Diff state for observe().
+    // Previous simulation state used by observe() fallback detection.
     int           lastScore_       = 0;
     int           lastBullets_     = 0;
     int           lastAliveAliens_ = 0;
@@ -167,13 +150,9 @@ private:
     bool          muted_ = false;
     bool          firstObserve_ = true;       // skip diffs on first call
 
-    // --- Music synth state (mutated on the audio thread inside the
-    // callback; mutex'd reads are not necessary because:
-    //   - The main thread sets musicTarget_ + musicIntensity_ via a
-    //     plain assignment in set_music(). On x86/ARM, naturally aligned
-    //     reads of a Music enum / float are atomic in practice. We don't
-    //     need strict happens-before; an occasional stale read is fine
-    //     because next callback will see the new value.
+    // Music synth state. The main thread writes the target/intensity and
+    // the audio callback reads them. A stale read for one callback is
+    // harmless; the next buffer will move toward the newest target.
     Music         musicTarget_      = Music::NONE;
     Music         musicCurrent_     = Music::NONE;
     float         musicIntensity_   = 0.0f;       // [0,1]

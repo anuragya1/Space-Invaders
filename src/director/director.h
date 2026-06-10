@@ -1,17 +1,13 @@
-// director.h - the second AI, watching the player.
+// director.h - adaptive difficulty that watches the run.
 //
-// PURPOSE
-// =======
-// While the in-game AI (src/input/ai_source.cpp) plays AS the player,
-// the Director plays AGAINST the player by tuning difficulty in real
-// time. The intent isn't to "cheat" -- it's to keep the player in the
-// flow zone, the way a movie editor paces a thriller: ease off when
-// the audience is tense, ratchet up when they're getting comfortable.
+// The player AI in src/input/ai_source.cpp plays the game. The Director
+// does something different: it watches how the run is going and nudges
+// pressure up or down. The point is not to cheat. The point is to keep
+// the game from staying too flat when the player is coasting, or too
+// punishing when the player is already barely hanging on.
 //
-// HOW IT WORKS
-// ============
-// We maintain a single scalar called `tension` that drifts toward 0
-// and is nudged up/down by player events:
+// The core state is a single scalar, `tension`, which drifts toward zero
+// and is nudged by player events:
 //
 //   +1.5 per player death        (player is struggling)
 //   +0.4 per powerup pickup      (player needed help)
@@ -19,10 +15,9 @@
 //   -1.0 per level cleared no-deaths
 //   -0.02 per second drift toward 0
 //
-// `tension` clamps to [-3.0, +3.0]. We map it to a 'pressure' in
-// [-1, +1] = tension / 3. From pressure, we derive three multipliers
-// the Game class applies to its alien-shoot rate, alien-move rate,
-// and powerup-drop chance.
+// `tension` clamps to [-3.0, +3.0]. We map that to pressure in [-1, +1]
+// and derive three multipliers that Game applies to alien shooting,
+// alien movement, and power-up drops.
 //
 //   pressure  =  +1  (player very stressed)  -> ease off
 //                shootMul = 0.6, moveMul = 0.7, dropMul = 2.5
@@ -33,19 +28,18 @@
 //   pressure  =  -1  (player coasting)        -> ramp up
 //                shootMul = 1.6, moveMul = 1.5, dropMul = 0.6
 //
-// We linearly interpolate between these three keys.
+// The values between those points are linearly interpolated.
 //
-// USAGE
-// =====
+// The SDL3 loop owns the wiring:
 //   Director dir;
-//   dir.on_restart(game);                // each new game
-//   ...per tick after step_pub:
+//   dir.on_restart(game);
+//   // each tick after step_pub():
 //   dir.observe(game, dtSec);
 //   auto m = dir.modifiers();
 //   game.set_director_modifiers(m.shootMul, m.moveMul, m.dropMul);
 //
-// The Director also exposes a label and a [-1,+1] pressure for the
-// HUD so the player can SEE the AI working.
+// The HUD reads the Director label and pressure so the player can see
+// when the game is easing off or pushing harder.
 #pragma once
 
 namespace si {
@@ -54,17 +48,23 @@ class Game;
 
 class Director {
 public:
+    enum class Beat {
+        STEADY,
+        PRESSURE_SURGE,
+        RELIEF_WINDOW
+    };
+
     struct Modifiers {
         float shootMul = 1.0f;
         float moveMul  = 1.0f;
         float dropMul  = 1.0f;
     };
 
-    // Reset all state to baseline; remember a snapshot of the game.
+    // Start a fresh run from a clean baseline.
     void on_restart(const Game& g);
 
-    // Drive one tick. dtSec is wall-time seconds since the previous
-    // observe() call (not game ticks). Used for the drift-toward-0.
+    // Observe one logic tick. dtSec is wall-clock seconds, used only for
+    // the slow drift back toward neutral pressure.
     void observe(const Game& g, float dtSec);
 
     // Current adaptive multipliers.
@@ -79,24 +79,36 @@ public:
     //   "RAMPING UP", "PUSHING", "STEADY", "EASING OFF", "HELPING"
     const char* label() const;
 
-    // Allow disabling at runtime (e.g. settings toggle). When disabled
-    // we return identity modifiers and pressure 0.
+    // Named pacing beat derived from sustained pressure. This makes the
+    // Director visible instead of leaving it as hidden math.
+    Beat beat() const { return beat_; }
+    bool beat_active() const { return beat_ != Beat::STEADY; }
+    const char* beat_label() const;
+    float beat_seconds_left() const { return beatTimer_; }
+    float beat_progress() const;
+
+    // Runtime toggle for Settings. Disabled means neutral modifiers.
     void set_enabled(bool e) { enabled_ = e; }
     bool enabled() const     { return enabled_; }
 
 private:
+    void update_beat_(float dtSec);
     void recompute_mods_();
 
-    // ---- internal tracking ----
+    // Internal state from the previous observe() call.
     float tension_   = 0.0f;
     int   lastLives_   = 0;
     int   lastP2Lives_ = 0;
-    int   lastPowerUseCount_ = 0;
+    int   lastPower_ = 0;
+    int   lastP2Power_ = 0;
     int   lastLevel_       = 0;
     int   lastCombo_       = 0;
-    int   levelStartDeaths_ = 0;
+    int   levelStartLives_ = 0;
     bool  enabled_ = true;
     bool  firstObserve_ = true;
+    Beat  beat_ = Beat::STEADY;
+    float beatTimer_ = 0.0f;
+    float beatCooldown_ = 0.0f;
 
     Modifiers mods_{};
 };

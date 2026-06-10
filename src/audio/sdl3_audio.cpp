@@ -39,9 +39,7 @@ inline float soft_clip(float x) {
 
 } // namespace
 
-// =========================================================================
-// Synthesis
-// =========================================================================
+// Sound synthesis.
 
 AudioSystem::Buffer AudioSystem::gen_blip(float freq, float durSec, float decay) {
     const int n = static_cast<int>(durSec * FREQ);
@@ -155,9 +153,7 @@ void AudioSystem::synthesize_all() {
     }
 }
 
-// =========================================================================
-// Lifecycle
-// =========================================================================
+// Audio device lifecycle.
 
 AudioSystem::~AudioSystem() {
     shutdown();
@@ -196,9 +192,7 @@ void AudioSystem::shutdown() {
     for (auto& b : sounds_) b.clear();
 }
 
-// =========================================================================
-// Mixer
-// =========================================================================
+// Mixer.
 
 void SDLCALL AudioSystem::audio_callback(void* userdata,
                                           SDL_AudioStream* stream,
@@ -257,7 +251,6 @@ void AudioSystem::mix_into(SDL_AudioStream* stream, int needed_bytes) {
     constexpr float dt    = 1.0f / SR;
     float tmp[CHUNK];
 
-    // ---- Crossfade housekeeping ----
     // If target differs from current, decay the mix to 0 then swap.
     // Otherwise raise mix toward 1.
     constexpr float CROSSFADE_PER_SEC = 4.0f;   // ~0.25s full crossfade
@@ -268,7 +261,7 @@ void AudioSystem::mix_into(SDL_AudioStream* stream, int needed_bytes) {
         std::memset(tmp, 0, sizeof(float) * static_cast<std::size_t>(n));
 
         if (!muted_) {
-            // --- Voice pool (SFX) ---
+            // Mix active one-shot sound effects.
             for (auto& v : voices_) {
                 if (!v.active || !v.buf) continue;
                 const Buffer& src = *v.buf;
@@ -290,7 +283,7 @@ void AudioSystem::mix_into(SDL_AudioStream* stream, int needed_bytes) {
                 }
             }
 
-            // --- Music synthesis ---
+            // Generate music directly into the output chunk.
             if (musicTarget_ != Music::NONE || musicCurrent_ != Music::NONE) {
                 // Crossfade the mix factor based on the target.
                 float targetMix = (musicTarget_ == musicCurrent_)
@@ -382,9 +375,7 @@ void AudioSystem::mix_into(SDL_AudioStream* stream, int needed_bytes) {
     }
 }
 
-// =========================================================================
-// Play (triggers a voice)
-// =========================================================================
+// Start a one-shot voice.
 
 void AudioSystem::play(Sfx s, float volume) {
     if (!stream_) return;
@@ -410,9 +401,7 @@ void AudioSystem::play(Sfx s, float volume) {
     slot->active = true;
 }
 
-// =========================================================================
-// observe() - turn game state diffs into sound triggers
-// =========================================================================
+// Turn game events and state changes into sound triggers.
 
 namespace {
 int count_alive_aliens(const Game& g) {
@@ -450,13 +439,46 @@ void AudioSystem::observe(const Game& g) {
         return;
     }
 
+    bool sawBulletFired = false;
+    bool sawAlienKilled = false;
+    bool sawPlayerHit = false;
+    bool sawPowerup = false;
+    bool sawLevelClear = false;
+    for (const auto& e : g.events()) {
+        switch (e.type) {
+            case GameEventType::BulletFired:
+                sawBulletFired = true;
+                if (e.playerId >= 0) play(Sfx::PLAYER_SHOOT, 0.55f);
+                else                 play(Sfx::ALIEN_SHOOT,  0.45f);
+                break;
+            case GameEventType::AlienKilled:
+                sawAlienKilled = true;
+                play(Sfx::ALIEN_DIE, 0.6f);
+                break;
+            case GameEventType::PlayerHit:
+                sawPlayerHit = true;
+                if (e.value > 0) play(Sfx::PLAYER_DIE, 0.9f);
+                break;
+            case GameEventType::PowerupCollected:
+                sawPowerup = true;
+                play(Sfx::POWERUP, 0.7f);
+                break;
+            case GameEventType::LevelCleared:
+                sawLevelClear = true;
+                play(Sfx::LEVEL_UP, 0.85f);
+                break;
+            default:
+                break;
+        }
+    }
+
     // New bullets fired this tick. Distinguishing player vs alien shots
     // by walking the bullets vector and only counting ones that are new
     // (any active bullet whose count went up). Simpler heuristic: bullets
     // total went up → at least one shot was fired. Then we look at the
     // newest bullets to decide if they're player or alien.
     const int curBullets = count_active_bullets(g);
-    if (curBullets > lastBullets_) {
+    if (!sawBulletFired && curBullets > lastBullets_) {
         // Scan all active bullets; for each one with y near the player
         // and direction up, count player shot. Sufficient.
         bool playerShot = false;
@@ -478,7 +500,7 @@ void AudioSystem::observe(const Game& g) {
     // Alien deaths: score went up by a multiple of (3-row)*10, OR the
     // alive count dropped. Use the alive-count drop - simpler.
     const int curAliveAliens = count_alive_aliens(g);
-    if (curAliveAliens < lastAliveAliens_) {
+    if (!sawAlienKilled && curAliveAliens < lastAliveAliens_) {
         const int diedThisTick = lastAliveAliens_ - curAliveAliens;
         for (int i = 0; i < diedThisTick && i < 3; ++i) {
             // Slight pitch variation for batches so it doesn't sound
@@ -489,11 +511,11 @@ void AudioSystem::observe(const Game& g) {
     lastAliveAliens_ = curAliveAliens;
 
     // Player died.
-    if (g.player.lives < lastPlayerLives_) {
+    if (!sawPlayerHit && g.player.lives < lastPlayerLives_) {
         play(Sfx::PLAYER_DIE, 0.9f);
     }
     lastPlayerLives_ = g.player.lives;
-    if (g.hasP2 && g.player2.lives < lastP2Lives_) {
+    if (!sawPlayerHit && g.hasP2 && g.player2.lives < lastP2Lives_) {
         play(Sfx::PLAYER_DIE, 0.9f);
     }
     lastP2Lives_ = g.hasP2 ? g.player2.lives : 0;
@@ -529,14 +551,15 @@ void AudioSystem::observe(const Game& g) {
 
     // Powerup pickup: power state went from NONE to something.
     const int curPower = static_cast<int>(g.player.power);
-    if (lastPowerActive_ == static_cast<int>(PUType::NONE)
+    if (!sawPowerup
+        && lastPowerActive_ == static_cast<int>(PUType::NONE)
         && curPower != static_cast<int>(PUType::NONE)) {
         play(Sfx::POWERUP, 0.7f);
     }
     lastPowerActive_ = curPower;
 
     // Level up: level number increased.
-    if (g.level() > lastLevel_) {
+    if (!sawLevelClear && g.level() > lastLevel_) {
         play(Sfx::LEVEL_UP, 0.85f);
     }
     lastLevel_ = g.level();

@@ -55,16 +55,14 @@ void blit_sprite(SDL_Renderer* ren, const Sprite& s,
     }
 }
 
-// =========================================================================
-// PALETTES
-// =========================================================================
+// Sprite palettes.
 
 namespace {
 
 // '0' = transparent (alpha 0). Everything else is opaque.
 constexpr SDL_Color T{0, 0, 0, 0};
 
-// --- Alien palettes ---
+// Alien palettes.
 const SpritePalette PAL_ALIEN_TOP {{
     T,
     {255, 110, 110, 255},   // '1' = light red
@@ -89,7 +87,7 @@ const SpritePalette PAL_ALIEN_BOT {{
     T, T, T, T, T, T, T, T, T, T, T, T
 }};
 
-// --- Player palettes ---
+// Player palettes.
 const SpritePalette PAL_PLAYER {{
     T,
     {130, 210, 255, 255},   // '1' = bright cyan (hull)
@@ -108,7 +106,7 @@ const SpritePalette PAL_PLAYER_P2 {{
     T, T, T, T, T, T, T, T, T, T, T
 }};
 
-// --- UFO palette ---
+// UFO palette.
 const SpritePalette PAL_UFO {{
     T,
     {255, 100, 200, 255},   // '1' = bright pink body
@@ -119,7 +117,7 @@ const SpritePalette PAL_UFO {{
     T, T, T, T, T, T, T, T, T, T
 }};
 
-// --- Boss palette ---
+// Boss palette.
 const SpritePalette PAL_BOSS {{
     T,
     {220,  90, 220, 255},   // '1' = main body purple
@@ -131,7 +129,7 @@ const SpritePalette PAL_BOSS {{
     T, T, T, T, T, T, T, T, T
 }};
 
-// --- Power-up palettes ---
+// Power-up palettes.
 const SpritePalette PAL_PU_TRIPLE {{
     T,
     {255, 220, 100, 255},   // '1' = yellow
@@ -158,14 +156,10 @@ const SpritePalette PAL_PU_RAPID {{
 
 } // anonymous namespace
 
-// =========================================================================
-// SPRITE DATA
-// =========================================================================
-//
 // All sprites are 16x16 (or wider). Use '.' for transparent.
 // Numbers / letters index into the corresponding palette.
 
-// --- Alien top row (octopus-like, 3-pointer) ---
+// Alien top row (octopus-like, 3-pointer).
 
 const char ALIEN_TOP_F0_DATA[] =
     "................"
@@ -203,7 +197,7 @@ const char ALIEN_TOP_F1_DATA[] =
     "................"
     "................";
 
-// --- Alien middle row (crab-like, 2-pointer) ---
+// Alien middle row (crab-like, 2-pointer).
 
 const char ALIEN_MID_F0_DATA[] =
     "................"
@@ -241,7 +235,7 @@ const char ALIEN_MID_F1_DATA[] =
     "................"
     "................";
 
-// --- Alien bottom row (squid-like, 1-pointer) ---
+// Alien bottom row (squid-like, 1-pointer).
 
 const char ALIEN_BOT_F0_DATA[] =
     "................"
@@ -286,7 +280,7 @@ const Sprite ALIEN_MID_F1 { ALIEN_MID_F1_DATA, 16, 16, &PAL_ALIEN_MID };
 const Sprite ALIEN_BOT_F0 { ALIEN_BOT_F0_DATA, 16, 16, &PAL_ALIEN_BOT };
 const Sprite ALIEN_BOT_F1 { ALIEN_BOT_F1_DATA, 16, 16, &PAL_ALIEN_BOT };
 
-// --- Player ship ---
+// Player ship.
 // Classic V-shape with engine glow at the bottom.
 
 const char PLAYER_SHIP_DATA[] =
@@ -328,7 +322,7 @@ const char PLAYER_SHIP_P2_DATA[] =
 const Sprite PLAYER_SHIP    { PLAYER_SHIP_DATA,    16, 16, &PAL_PLAYER    };
 const Sprite PLAYER_SHIP_P2 { PLAYER_SHIP_P2_DATA, 16, 16, &PAL_PLAYER_P2 };
 
-// --- UFO (32x16: classic flying saucer) ---
+// UFO (32x16 classic flying saucer).
 
 const char UFO_SPRITE_DATA[] =
     "................................"
@@ -350,7 +344,7 @@ const char UFO_SPRITE_DATA[] =
 
 const Sprite UFO_SPRITE { UFO_SPRITE_DATA, 32, 16, &PAL_UFO };
 
-// --- Boss (80x32: a multi-segment cruiser) ---
+// Boss (80x32 multi-segment cruiser).
 
 const char BOSS_SPRITE_DATA[] =
     "................................................................................"
@@ -388,7 +382,7 @@ const char BOSS_SPRITE_DATA[] =
 
 const Sprite BOSS_SPRITE { BOSS_SPRITE_DATA, 80, 32, &PAL_BOSS };
 
-// --- Power-ups (16x16 each) ---
+// Power-ups (16x16 each).
 // Each has a circular badge with a letter (T/S/R) and a colored ring.
 
 const char POWERUP_TRIPLE_DATA[] =

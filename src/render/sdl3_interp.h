@@ -1,25 +1,19 @@
-// sdl3_interp.h - position snapshot for smooth-motion interpolation.
+// sdl3_interp.h - snapshots used for smooth SDL3 motion.
 //
-// The Game engine ticks logic at 12.5 fps (FRAME_MS = 80 ms). Entities
-// have integer cell positions that change once per tick. If we render
-// those positions raw at 60 fps, motion looks snappy and jerky - the
-// player jumps one cell every five render frames.
-//
-// To smooth this out we keep a snapshot of where every entity *was* on
-// the previous logical tick. At render time we have a fractional alpha
-// in [0,1] representing how far we are into the current tick
-// (alpha = accumulator_ns / tick_ns). We interpolate:
+// The simulation moves in integer cells at 12.5 fps. SDL3 renders much
+// more often than that, so drawing raw cell positions would make the
+// player and aliens jump from cell to cell. The renderer fixes that by
+// remembering where selected entities were before the current logic tick
+// and interpolating toward where they are now:
 //
 //     rendered_position = prev + (curr - prev) * alpha
 //
-// This adds zero coupling to the Game class - it is purely a render
-// concern. Game does not need to know about it.
+// This stays entirely on the renderer side. Game does not need to know
+// interpolation exists.
 //
-// Snapshots are taken just BEFORE Game::step_pub() so 'prev' captures
-// the position at the START of the current tick. After step_pub the
-// entity's position field is the END of that same tick. Interpolation
-// then smoothly walks the renderer between them as the next tick's
-// accumulator fills up.
+// Snapshots are taken just before Game::step_pub(). After step_pub(),
+// current Game positions are the end of that tick. The renderer then
+// blends from previous to current while the next tick accumulates.
 #pragma once
 
 #include "../core/entities.h"

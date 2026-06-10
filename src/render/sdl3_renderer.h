@@ -1,8 +1,6 @@
-// sdl3_renderer.h - renders the game state into an SDL3 window.
+// sdl3_renderer.h - renders Game state into an SDL3 window.
 //
-// LAYOUT
-// ======
-// Tile-based: every cell in the 70x26 playfield maps to a fixed-size
+// The renderer is tile-based: every cell in the 70x26 playfield maps to a fixed-size
 // pixel block. Default TILE = 16 → playfield 1120x416, HUD 1120x96
 // on top, full window 1120x512.
 //
@@ -10,14 +8,10 @@
 // can be resized or made fullscreen and the playfield scales cleanly
 // (preserving aspect ratio, black bars on the edges).
 //
-// TEXT
-// ====
 // We use SDL3's built-in SDL_RenderDebugText (8x8 ASCII glyphs baked
 // into the library). No SDL_ttf, no font files. Scaled up via
 // SDL_SetRenderScale for HUD title and overlays.
 //
-// SMOOTH MOTION
-// =============
 // Game logic ticks at 12.5fps (FRAME_MS = 80ms) but we render at vsync
 // (~60fps). To avoid the cell-by-cell snap, we interpolate each
 // entity's previous-tick position towards its current position based
@@ -30,14 +24,10 @@
 //     anything that just blew up, and updates the screen-shake amount
 //   - draw(... alpha) interpolates between prev_ and current using alpha
 //
-// SCREEN SHAKE
-// ============
 // On any new explosion we kick `shakeAmount_` up. It decays each frame.
 // The playfield draws with a small random pixel offset proportional to
 // shakeAmount_. HUD draws WITHOUT shake -- a wobbling HUD looks broken.
 //
-// PARTICLES
-// =========
 // `particles_` is an internal ParticleSystem that emits debris bursts
 // when explosions appear and sparks when bullets hit. Renderer-only
 // state; never touches Game / replay / save.
@@ -75,7 +65,7 @@ public:
 
     SDL3Renderer();
 
-    // ---- Interpolation hooks ----
+    // Interpolation hooks called around each simulation tick.
     // Capture the current entity positions into the "prev" snapshot.
     // Call this *immediately before* game.step_pub() in the main loop.
     void pre_step(const Game& g);
@@ -93,7 +83,12 @@ public:
     // and resets prev snapshot to current).
     void on_restart(const Game& g);
 
-    // ---- Drawing ----
+    // Accessibility: disable screen-shake offsets while keeping normal
+    // gameplay, particles, interpolation, and HUD rendering intact.
+    void set_reduced_motion(bool enabled);
+    bool reduced_motion() const { return reducedMotion_; }
+
+    // Draw the world at the current interpolation alpha.
     // Draw the entire game state. alpha in [0..1] selects how far
     // through the current tick we are (0 = at start of tick, 1 = at
     // end). The renderer interpolates entity positions between the
@@ -105,7 +100,7 @@ public:
     void draw_game_over(SDL_Renderer* ren, const Game& g);
 
 private:
-    // Static helpers ----------------------------------------------------
+    // Coordinate helpers.
     static int px(int cx) { return cx * TILE; }
     static int py(int cy) { return cy * TILE + HUD_H; }
     static float px_f(float cx) { return cx * static_cast<float>(TILE); }
@@ -120,7 +115,7 @@ private:
         SDL_RenderFillRect(ren, &r);
     }
 
-    // Primitive draws ----------------------------------------------------
+    // Primitive drawing helpers.
     void draw_cell(SDL_Renderer* ren, int cx, int cy, Rgba col, float pad = 1.0f);
 
     // Same as draw_cell but takes float cell coords (for interpolated
@@ -134,7 +129,8 @@ private:
     void draw_text_centered(SDL_Renderer* ren, const std::string& msg,
                             float cx, float y, float scale);
 
-    // Multi-cell entities (interpolated where it makes sense) -----------
+    // Entity drawing helpers. Only moving, stable-identity entities are
+    // interpolated.
     void draw_alien(SDL_Renderer* ren, const Alien& a, const Pt& prev, float alpha);
     void draw_bullet(SDL_Renderer* ren, const Bullet& b);
     void draw_player(SDL_Renderer* ren, const Player& p, const Pt& prev,
@@ -152,7 +148,7 @@ private:
     // a UFO enters the playfield. Driven by ufoBannerTimer_.
     void draw_ufo_banner(SDL_Renderer* ren);
 
-    // State -------------------------------------------------------------
+    // Renderer-owned state.
     InterpSnapshot   prev_;
     ParticleSystem   particles_;
 
@@ -162,6 +158,7 @@ private:
     float            shakeAmount_ = 0.0f;
     float            shakeOffX_   = 0.0f;
     float            shakeOffY_   = 0.0f;
+    bool             reducedMotion_ = false;
     std::mt19937     shakeRng_;
 
     // Number of explosions in g at last post_step; new ones spawn debris.

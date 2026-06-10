@@ -1,7 +1,7 @@
 // cli.h - command-line argument parser.
 //
-// New in this version. Skips the menu when launched with flags - useful
-// for demos, scripted multiplayer matches, and benchmarking the AI.
+// Skips the menu when launched with flags - useful for demos, scripted
+// multiplayer matches, replay checks, and benchmarking the AI.
 //
 //   si_pro                              # interactive menu
 //   si_pro --help

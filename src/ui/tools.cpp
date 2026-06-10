@@ -26,7 +26,7 @@
 
 namespace si::tools {
 
-// ---- replay verifier ----
+// Replay verifier.
 int verify_replay(const std::string& path) {
     Replay rp;
     if (!replay_load(path, rp)) {
@@ -73,7 +73,7 @@ int verify_replay(const std::string& path) {
     return 1;
 }
 
-// ---- benchmark ----
+// Headless benchmark.
 int benchmark(int ticks, int diffIdx) {
     Stats st; auto ach = achievements_default();
     AISource ai(ai_profile_by_name("aggressive"));
@@ -97,7 +97,7 @@ int benchmark(int ticks, int diffIdx) {
     return 0;
 }
 
-// ---- GA evolution ----
+// Genetic search over AI weights.
 //
 // Genome: 5 floats {w_danger, w_align, w_pickup, w_center, cooldown}.
 // Fitness: mean score across K games on the given difficulty.
@@ -212,13 +212,10 @@ int evolve_ai(int generations, int diffIdx) {
     return 0;
 }
 
-// ---- AI vs AI co-op ----
+// AI vs AI co-op.
 //
-// Two AISources play together. Both control the same player slot;
-// for actually splitting them across P1 and P2 we'd need a co-op
-// game configuration, which means hasP2 must be true. The Game ctor
-// only enables hasP2 for COOP_HOST/COOP_CLIENT; we abuse that here
-// by setting mode=COOP_HOST so we get the two-player simulation.
+// Two AISources play together. We use a co-op mode so Game creates both
+// player slots, then dispatch each playerId to its own AI source.
 int ai_vs_ai(int diffIdx, const std::string& profile,
              const std::string& user, Stats& stats,
              std::vector<Achievement>& ach) {

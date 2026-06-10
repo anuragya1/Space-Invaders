@@ -38,8 +38,6 @@ public:
     static constexpr int TILE  = 16;
     static constexpr int HUD_H = 96;
 
-    // ---- Spawn helpers ----
-    //
     // x, y are CELL coordinates (Pt-style). Internally we convert to
     // pixel coordinates (cell-center) so callers can pass e.pos.x /
     // e.pos.y directly.
@@ -56,7 +54,6 @@ public:
                      std::uint8_t r = 255, std::uint8_t g = 180,
                      std::uint8_t b = 120, int count = 8);
 
-    // ---- Per-frame ----
     void update(float dtSec);                // advance live particles
     void draw(SDL_Renderer* ren) const;      // alpha-blended squares
     void clear();                            // wipe all particles

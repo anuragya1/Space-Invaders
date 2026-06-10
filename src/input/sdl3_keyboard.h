@@ -1,28 +1,17 @@
 // sdl3_keyboard.h - SDL3 keyboard input source.
 //
-// MOVEMENT (LEFT / RIGHT)
-// -----------------------
-// State-polled via SDL_GetKeyboardState(). Holding the key keeps the
-// player moving every tick.
+// Movement is state-polled with SDL_GetKeyboardState(), so holding left
+// or right moves the player every tick.
 //
-// DISCRETE ACTIONS (SHOOT / PAUSE / QUIT)
-// ---------------------------------------
-// Event-latched, not state-polled. The main loop forwards every
-// SDL_EVENT_KEY_DOWN to note_key_down(), which sets a pending flag.
-// On the next poll() the flag is consumed and returned in the mask.
+// Shoot, pause, and quit are event-latched. The SDL3 main loop forwards
+// key-down events to note_key_down(), then poll() consumes those pending
+// flags on the next logic tick. This avoids a real missed-tap problem:
+// the game ticks at 12.5 Hz, while a quick key press can begin and end
+// between two polls.
 //
-// This avoids the missed-tap bug: poll() runs at 12.5 Hz, but a key
-// press is ~30-60 ms - faster than the poll interval - so a
-// state-polling design dropped presses that started and ended between
-// two poll() calls. Event-driven latching is reliable.
-//
-// AUTO-FIRE DURING RAPID POWER-UP
-// -------------------------------
-// While the player has the RAPID power-up active, holding Space
-// continuously emits SHOOT (with a small per-shot cooldown of
-// AUTOFIRE_COOLDOWN_TICKS, ~4 shots/sec at FRAME_MS = 80). Without
-// the power-up, only taps fire. The per-difficulty playerBmax cap
-// still applies via Game::apply_action.
+// Rapid-fire is the exception. When the RAPID power-up is active, holding
+// Space emits SHOOT on a cooldown. Game::apply_action still enforces the
+// per-difficulty bullet cap.
 #pragma once
 
 #include "input_source.h"
@@ -32,8 +21,8 @@ namespace si {
 
 class SDL3Keyboard : public IInputSource {
 public:
-    // Forwarded from the main loop on every SDL_EVENT_KEY_DOWN.
-    // Sets the relevant latch.
+    // Forward key-down events here so short taps survive until the next
+    // fixed simulation tick.
     void note_key_down(SDL_Keycode k);
 
     std::uint8_t poll(std::uint32_t tick, const Game& g,

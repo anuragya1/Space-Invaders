@@ -72,7 +72,7 @@ bool TCPSocket::sendLine(const std::string& l) {
     return sendAll(m.data(), (int)m.size());
 }
 
-// ---- host / join ----
+// Host/join helpers.
 
 TCPSocket net_host(int port, int timeout_sec) {
     TCPSocket none;

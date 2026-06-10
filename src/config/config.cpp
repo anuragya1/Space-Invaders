@@ -50,6 +50,7 @@ bool load_config(const std::string& path, Config& cfg) {
             else if (key == "sdl3.fullscreen")  cfg.sdl3_fullscreen  = (val == "1" || val == "true" || val == "yes");
             else if (key == "sdl3.muted")       cfg.sdl3_muted       = (val == "1" || val == "true" || val == "yes");
             else if (key == "sdl3.director")    cfg.sdl3_director_enabled = (val == "1" || val == "true" || val == "yes");
+            else if (key == "sdl3.reduced_motion") cfg.sdl3_reduced_motion = (val == "1" || val == "true" || val == "yes");
             // unknown keys silently ignored
         } catch (...) { /* malformed value: ignore */ }
     }
@@ -75,6 +76,7 @@ bool save_config(const std::string& path, const Config& cfg) {
     f << "sdl3.fullscreen    = " << (cfg.sdl3_fullscreen ? "1" : "0") << '\n';
     f << "sdl3.muted         = " << (cfg.sdl3_muted      ? "1" : "0") << '\n';
     f << "sdl3.director      = " << (cfg.sdl3_director_enabled ? "1" : "0") << '\n';
+    f << "sdl3.reduced_motion = " << (cfg.sdl3_reduced_motion ? "1" : "0") << '\n';
     return true;
 }
 

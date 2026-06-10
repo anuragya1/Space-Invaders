@@ -1,7 +1,5 @@
 // sdl3_sprites.h - pixel-art sprites for the SDL3 build.
 //
-// FORMAT
-// ======
 // Each sprite is an N-character-per-row ASCII array. Each character
 // maps to one color in a small palette (per-sprite-set). A '.' is
 // transparent. This is the same trick the 8-bit / 16-bit consoles
@@ -12,8 +10,6 @@
 // the UFO is 32x16 (2 cells wide), the boss is 80x32 (5 cells x 2
 // cells), the player is 16x16.
 //
-// BLIT
-// ====
 // blit_sprite() draws the sprite at a pixel coordinate, scaling each
 // source pixel to a px*px destination square (= 1.0 by default). For
 // each non-'.' character it issues one SDL_RenderFillRect. ~256
@@ -58,7 +54,7 @@ void blit_sprite(SDL_Renderer* ren, const Sprite& s,
                   std::uint8_t tintB = 255,
                   std::uint8_t alpha = 0);
 
-// ----- Sprite catalog (defined in sdl3_sprites.cpp) ---------------------
+// Sprite catalog, defined in sdl3_sprites.cpp.
 
 // Two-frame animations: even / odd. AnimF in the game flips 0/1 every
 // 8 ticks; renderer picks the matching frame.

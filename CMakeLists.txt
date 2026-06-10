@@ -71,12 +71,18 @@ set(SI_TESTS
     test_rng
     test_replay
     test_level
+    test_config
     test_ai
+    test_director
+    test_events
     test_determinism
 )
 
 foreach (T IN LISTS SI_TESTS)
     add_executable(${T} tests/${T}.cpp ${SI_CORE_SOURCES})
+    if (T STREQUAL "test_director")
+        target_sources(${T} PRIVATE src/director/director.cpp)
+    endif()
     target_include_directories(${T} PRIVATE src)
     if (WIN32)
         target_link_libraries(${T} PRIVATE ws2_32)

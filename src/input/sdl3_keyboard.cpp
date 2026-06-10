@@ -17,7 +17,7 @@ std::uint8_t SDL3Keyboard::poll(std::uint32_t /*tick*/, const Game& g,
                                  int /*playerId*/) {
     std::uint8_t m = 0;
 
-    // ---- Movement: state-polled, multi-key tolerant ----
+    // Movement is held-state input, so polling is exactly what we want.
     const bool* ks = SDL_GetKeyboardState(nullptr);
     if (ks) {
         if (ks[SDL_SCANCODE_A] || ks[SDL_SCANCODE_LEFT]) {
@@ -28,7 +28,7 @@ std::uint8_t SDL3Keyboard::poll(std::uint32_t /*tick*/, const Game& g,
         }
     }
 
-    // ---- Discrete: consume latched flags ----
+    // One-tick actions come from latches set by SDL key-down events.
     if (pendingShoot_) {
         m |= action::SHOOT;
         pendingShoot_ = false;
@@ -40,7 +40,7 @@ std::uint8_t SDL3Keyboard::poll(std::uint32_t /*tick*/, const Game& g,
     if (pendingPause_) { m |= action::PAUSE; pendingPause_ = false; }
     if (pendingQuit_)  { m |= action::QUIT;  pendingQuit_  = false; }
 
-    // ---- Auto-fire while Rapid power-up active and Space held ----
+    // Rapid turns Space into held auto-fire, still throttled by cooldown.
     const bool rapidActive = (g.player.power == PUType::RAPID);
     const bool spaceHeld   = (ks && ks[SDL_SCANCODE_SPACE]);
 

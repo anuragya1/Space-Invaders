@@ -23,7 +23,7 @@
 
 namespace si {
 
-// ---- Screen identifiers (used by the state machine) ----------------------
+// Screen identifiers used by the SDL3 state machine.
 enum class Screen {
     USERNAME_INPUT,
     MAIN_MENU,
@@ -31,13 +31,14 @@ enum class Screen {
     LEADERBOARD,
     STATS_ACHIEVEMENTS,
     DIFFICULTY_SELECT,
+    REPLAY_INPUT,
     PLAYING,        // game is running; main loop owns rendering
     PAUSED,
     GAME_OVER,
     QUIT
 };
 
-// ---- Drawing routines ----------------------------------------------------
+// Shared drawing helpers.
 
 // Window dimensions are taken from the renderer; we hard-code them
 // here for simplicity (same constants).
@@ -58,7 +59,7 @@ void draw_screen_title(SDL_Renderer* ren, const std::string& title,
 // Footer hint, small dim text at the bottom.
 void draw_footer(SDL_Renderer* ren, const std::string& hint);
 
-// ---- Specific screens ----------------------------------------------------
+// Specific screens and overlays.
 
 // USERNAME_INPUT
 // Caller passes the current entry buffer and whether text input is
@@ -79,6 +80,12 @@ void draw_settings(SDL_Renderer* ren, const MenuList& menu);
 
 // DIFFICULTY_SELECT
 void draw_difficulty_select(SDL_Renderer* ren, const MenuList& menu);
+
+// REPLAY_INPUT
+void draw_replay_input(SDL_Renderer* ren,
+                        const std::string& buffer,
+                        const std::string& error,
+                        bool cursorBlinkOn);
 
 // LEADERBOARD - shows top 10
 void draw_leaderboard(SDL_Renderer* ren,

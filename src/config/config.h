@@ -1,7 +1,7 @@
 // config.h - simple "key = value" config file loader.
 //
-// New in this version. Loads si_pro.cfg from the working directory at
-// startup. Missing file is fine - defaults apply. Format:
+// Loads si_pro.cfg from the working directory at startup. Missing file
+// is fine - defaults apply. Format:
 //
 //   # comments start with '#'
 //   net.port = 7777
@@ -37,6 +37,7 @@ struct Config {
     bool          sdl3_fullscreen      = false;    // start in fullscreen
     bool          sdl3_muted           = false;    // start with sound off
     bool          sdl3_director_enabled = true;    // adaptive difficulty AI
+    bool          sdl3_reduced_motion  = false;    // disable screen shake
 };
 
 // Load from path; missing file returns defaults. Returns true if file

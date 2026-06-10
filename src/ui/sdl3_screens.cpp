@@ -44,9 +44,7 @@ void set_col(SDL_Renderer* ren, std::uint8_t r, std::uint8_t g,
 
 } // namespace
 
-// =========================================================================
-// Backdrops + decoration
-// =========================================================================
+// Shared backdrops and simple decoration.
 
 void draw_dimmed_backdrop(SDL_Renderer* ren, std::uint8_t alpha) {
     SDL_BlendMode prev = SDL_BLENDMODE_NONE;
@@ -93,9 +91,7 @@ void draw_footer(SDL_Renderer* ren, const std::string& hint) {
                          1.5f);
 }
 
-// =========================================================================
-// USERNAME_INPUT
-// =========================================================================
+// First-run callsign screen.
 
 void draw_username_input(SDL_Renderer* ren,
                          const std::string& buffer,
@@ -142,9 +138,7 @@ void draw_username_input(SDL_Renderer* ren,
     draw_footer(ren, "ENTER to accept   ESC to use 'player'   max 16 chars");
 }
 
-// =========================================================================
-// MAIN_MENU
-// =========================================================================
+// Main menu.
 
 void draw_main_menu(SDL_Renderer* ren, const MenuList& menu,
                     const std::string& user, bool /*hasSave*/) {
@@ -166,15 +160,13 @@ void draw_main_menu(SDL_Renderer* ren, const MenuList& menu,
     // Menu items, centered, evenly spaced.
     menu.draw(ren,
               static_cast<float>(SCR_W) * 0.5f,
-              215.0f, 38.0f, 2.0f);
+              198.0f, 32.0f, 1.8f);
 
     draw_footer(ren,
         "UP/DOWN to move   ENTER to select   ESC to quit");
 }
 
-// =========================================================================
-// SETTINGS
-// =========================================================================
+// Settings screen.
 
 void draw_settings(SDL_Renderer* ren, const MenuList& menu) {
     draw_menu_backdrop(ren);
@@ -190,9 +182,7 @@ void draw_settings(SDL_Renderer* ren, const MenuList& menu) {
         "UP/DOWN to move   ENTER/LEFT/RIGHT to change   ESC to save & back");
 }
 
-// =========================================================================
-// DIFFICULTY_SELECT
-// =========================================================================
+// Difficulty selection.
 
 void draw_difficulty_select(SDL_Renderer* ren, const MenuList& menu) {
     draw_menu_backdrop(ren);
@@ -225,9 +215,58 @@ void draw_difficulty_select(SDL_Renderer* ren, const MenuList& menu) {
     draw_footer(ren, "ENTER to confirm   ESC to back");
 }
 
-// =========================================================================
-// LEADERBOARD
-// =========================================================================
+// Replay filename entry.
+
+void draw_replay_input(SDL_Renderer* ren,
+                       const std::string& buffer,
+                       const std::string& error,
+                       bool cursorBlinkOn) {
+    draw_menu_backdrop(ren);
+    draw_screen_title(ren, "WATCH REPLAY");
+
+    set_col(ren, 220, 230, 245);
+    render_text_centered(ren,
+        "Enter a .rpl filename from the working directory.",
+        static_cast<float>(SCR_W) * 0.5f,
+        145.0f, 1.7f);
+
+    const float boxX = static_cast<float>(SCR_W) * 0.5f - 300.0f;
+    const float boxY = 210.0f;
+    const float boxW = 600.0f;
+    const float boxH = 54.0f;
+    set_col(ren, 80, 90, 120);
+    fill_rect(ren, boxX, boxY, boxW, boxH);
+    set_col(ren, 130, 210, 255);
+    fill_rect(ren, boxX, boxY,                 boxW, 2.0f);
+    fill_rect(ren, boxX, boxY + boxH - 2.0f,   boxW, 2.0f);
+    fill_rect(ren, boxX, boxY,                 2.0f, boxH);
+    fill_rect(ren, boxX + boxW - 2.0f, boxY,   2.0f, boxH);
+
+    std::string disp = buffer;
+    if (disp.empty() && cursorBlinkOn) disp = "_";
+    else if (cursorBlinkOn)            disp += '_';
+    set_col(ren, 220, 230, 245);
+    render_text_centered(ren, disp,
+                         static_cast<float>(SCR_W) * 0.5f,
+                         boxY + 16.0f, 2.2f);
+
+    if (!error.empty()) {
+        set_col(ren, 255, 110, 110);
+        render_text_centered(ren, error,
+                             static_cast<float>(SCR_W) * 0.5f,
+                             305.0f, 1.5f);
+    } else {
+        set_col(ren, 140, 155, 175);
+        render_text_centered(ren,
+            "Replays store inputs, not video. SDL3 will play them through the same simulation.",
+            static_cast<float>(SCR_W) * 0.5f,
+            305.0f, 1.2f);
+    }
+
+    draw_footer(ren, "ENTER to load   ESC to back");
+}
+
+// Leaderboard screen.
 
 void draw_leaderboard(SDL_Renderer* ren,
                       const std::vector<Record>& lb,
@@ -289,9 +328,7 @@ void draw_leaderboard(SDL_Renderer* ren,
     draw_footer(ren, "ESC to back");
 }
 
-// =========================================================================
-// STATS + ACHIEVEMENTS
-// =========================================================================
+// Stats and achievements.
 
 void draw_stats_achievements(SDL_Renderer* ren,
                              const std::string& user,
@@ -359,9 +396,7 @@ void draw_stats_achievements(SDL_Renderer* ren,
     draw_footer(ren, "ESC to back");
 }
 
-// =========================================================================
-// PAUSED overlay
-// =========================================================================
+// Pause overlay.
 
 void draw_pause_overlay(SDL_Renderer* ren, const MenuList& menu,
                         const Game& g) {
@@ -388,9 +423,7 @@ void draw_pause_overlay(SDL_Renderer* ren, const MenuList& menu,
     draw_footer(ren, "P to resume   UP/DOWN + ENTER on menu");
 }
 
-// =========================================================================
-// GAME_OVER
-// =========================================================================
+// Game-over overlay.
 
 void draw_game_over(SDL_Renderer* ren, const MenuList& menu,
                     const Game& g, bool isNewBest) {

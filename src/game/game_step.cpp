@@ -87,6 +87,8 @@ void Game::alien_shoot() {
     if (front.empty()) return;
     int idx = front[rng_.range(0, (int)front.size() - 1)];
     bullets.emplace_back(aliens[idx].pos.x, aliens[idx].pos.y + 1, +1, -1);
+    emit_event(GameEvent{GameEventType::BulletFired, tick_, -1,
+                         aliens[idx].pos.x, aliens[idx].pos.y + 1});
 }
 
 void Game::update_ufo() {
@@ -140,6 +142,8 @@ void Game::update_boss() {
                 break;
             }
         }
+        emit_event(GameEvent{GameEventType::BulletFired, tick_, -1,
+                             boss.x, boss.y + 2});
         boss.pattern = (boss.pattern + 1) % 3;
     }
 }
@@ -160,6 +164,8 @@ void Game::apply_pickup(Player& p, PUType t) {
     p.power      = t;
     p.powerTimer = 220;
     ++statsRef_.powerupsUsed;
+    emit_event(GameEvent{GameEventType::PowerupCollected, tick_,
+                         p.id, p.pos.x, p.pos.y, 0, 0, t});
     switch (t) {
         case PUType::TRIPLE:
             flash("*** P" + std::to_string(p.id + 1) + " TRIPLE SHOT! ***"); break;
@@ -194,6 +200,9 @@ void Game::update_pu() {
 }
 
 void Game::hit_player(Player& p) {
+    emit_event(GameEvent{GameEventType::PlayerHit, tick_,
+                         p.id, p.pos.x, p.pos.y,
+                         p.shielded ? 0 : 1});
     if (p.shielded) {
         if (--p.shieldHP <= 0) {
             p.shielded = false;
@@ -249,8 +258,14 @@ void Game::update_bullets() {
             --boss.hp;
             explosions.emplace_back(b.pos.x, b.pos.y);
             if (boss.hp > 0) {
+                int oldStage = boss.stage;
                 int frac = (boss.hp * 3) / boss.maxHp;
                 boss.stage = std::max(1, 3 - frac);
+                if (boss.stage != oldStage) {
+                    emit_event(GameEvent{GameEventType::BossPhaseChanged,
+                                         tick_, -1, boss.x, boss.y,
+                                         boss.stage});
+                }
             } else {
                 int bonus = 500 * diff_.scoreMult * level_;
                 if (b.owner == 1) player2.score += bonus; else player.score += bonus;
@@ -279,6 +294,8 @@ void Game::update_bullets() {
             if (b.owner == 1) player2.score += pts; else player.score += pts;
             ++statsRef_.aliensKilled;
             ++run_aliens_killed;
+            emit_event(GameEvent{GameEventType::AlienKilled, tick_,
+                                 b.owner, a.pos.x, a.pos.y, pts, combo_});
             unlock("FIRST_BLOOD");
             if (combo_ == 5)  unlock("COMBO_5");
             if (combo_ == 10) unlock("COMBO_10");
@@ -319,6 +336,8 @@ void Game::update_bullets() {
 }
 
 void Game::next_level() {
+    emit_event(GameEvent{GameEventType::LevelCleared, tick_, -1,
+                         0, 0, level_});
     // Emit per-level telemetry BEFORE the level counter advances.
     if (!telemetry_user_.empty()) {
         auto now = std::chrono::steady_clock::now();

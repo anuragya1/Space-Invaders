@@ -92,7 +92,7 @@ void Game::render() {
 
     rbuf_.print();
 
-    // ---- HUD line ----
+    // HUD line.
     std::cout << color::BOLD << color::BWHITE
               << " [" << diff_.name << "]" << color::RST
               << color::BYELLOW << "  Sc:" << color::BWHITE
