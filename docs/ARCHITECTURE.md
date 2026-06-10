@@ -1,274 +1,261 @@
 # Architecture
 
-This document explains the structure of `si_pro` for someone (e.g. a
-viva examiner, or future-me) who wants to navigate the code without
-reading every line. Read it alongside the top-level `README.md`.
+This is the short map of how the project fits together. It is not a
+class-by-class reference. The code is small enough that the best way to
+learn it is still to read the main files.
 
-## One-paragraph summary
+## Core Idea
 
-`si_pro` is a single binary built from ~4700 lines of modern C++17,
-split across ~70 source files in 13 directories. The game state lives
-in a single `Game` class. Game state is driven each tick by an abstract
-`IInputSource` — one polymorphic interface satisfied by five concrete
-classes (keyboard, AI, replay, network co-op, AI-vs-AI). Persistence is
-six independent plain-text formats. Networking is input-lockstep over
-TCP with seeded RNG synchronization. Headless analysis tools
-(benchmark, replay verifier, training, GA evolution) reuse the same
-`Game::run_headless` entry point that tests use.
+Most of the project hangs off one decision:
 
-## Dependency graph
-
-The build graph is strictly one-way. There are no cyclic includes;
-every file in a lower layer compiles without seeing anything from a
-higher layer.
-
-```
-                            main.cpp
-                                │
-                ┌───────────────┴───────────────┐
-                ▼                               ▼
-              ui/             tools (benchmark, evolve, verify)
-                │                               │
-        ┌───────┴───────┐                       │
-        ▼               ▼                       │
-     editor/         menus/                     │
-        │               │                       │
-        └───────┬───────┴───────────────────────┘
-                ▼
-              game/  (orchestrator)
-                │
-        ┌───────┴───────┐
-        ▼               ▼
-      input/         persistence/
-        │               │
-        └───────┬───────┘
-                ▼
-              core/  (entities, RNG, constants, action masks)
-                │
-        ┌───────┴────────┐
-        ▼                ▼
-     render/          platform/  (POSIX vs Win32 abstraction)
-                          │
-                       net/      (TCP socket wrapper)
-
-    config/ and debug/ (logger) are leaf modules used everywhere.
-    i18n/ is used by ui/ only.
+```text
+input source -> action mask -> deterministic Game simulation
 ```
 
-## Directory map
+Keyboard input, SDL3 input, AI, replay playback, network co-op, tests,
+and tools all feed small action masks into the same `Game` loop. That is
+why replay verification, headless tests, AI runs, and lockstep co-op can
+share so much code.
 
-| Directory             | Role                                                         |
-|-----------------------|--------------------------------------------------------------|
-| `src/platform/`       | OS abstraction. POSIX termios + BSD sockets vs Win32 conio + Winsock. |
-| `src/core/`           | Constants, ANSI colors, RNG, entity structs, difficulty, version. |
-| `src/config/`         | `key=value` config file loader; CLI flag parser.             |
-| `src/debug/`          | Thread-safe leveled logger.                                  |
-| `src/render/`         | Flicker-free terminal render buffer (`RBuf`).                |
-| `src/persistence/`    | Six plain-text file formats: save, leaderboard, stats, achievements, replay, level, telemetry. |
-| `src/net/`            | RAII `TCPSocket` + `net_host` / `net_join` helpers.          |
-| `src/input/`          | `IInputSource` abstraction and five implementations.         |
-| `src/game/`           | The `Game` class, split across three .cpp files for navigability. |
-| `src/editor/`         | In-terminal level editor.                                    |
-| `src/ui/`             | Banner, menus, mode runners, tools (verify/evolve/benchmark/ai-vs-ai). |
-| `src/i18n/`           | English + Hindi UI strings.                                  |
-| `tests/`              | Five unit-test suites with a tiny dependency-free framework. |
+## Main Layers
 
-## Key abstractions
+```text
+main.cpp / main_sdl3.cpp
+        |
+        v
+ui / tools / renderer / audio
+        |
+        v
+game/
+        |
+        v
+input/   persistence/   director/
+        |
+        v
+core/
+```
 
-### `IInputSource`
+`platform/` hides POSIX vs Win32 details. `net/` wraps TCP sockets.
+`config/` and `debug/` are used by several layers.
 
-The single polymorphic interface that lets one `Game::run` loop drive
-every mode. Defined in `src/input/input_source.h`:
+## Directory Map
+
+| Directory | Role |
+|---|---|
+| `src/core/` | Constants, entities, action masks, RNG, difficulty, events |
+| `src/game/` | Main simulation and terminal rendering bridge |
+| `src/input/` | Keyboard, SDL3 keyboard, AI, replay, and co-op input |
+| `src/render/` | Terminal buffer and SDL3 rendering code |
+| `src/audio/` | SDL3 synthesized audio |
+| `src/director/` | Adaptive Director AI |
+| `src/persistence/` | Saves, stats, achievements, leaderboard, replays, levels, telemetry |
+| `src/ui/` | Terminal menus/tools and SDL3 screens |
+| `src/net/` | TCP lockstep helpers |
+| `src/platform/` | OS-specific terminal/network setup |
+| `tests/` | Small C++ test executables |
+
+## Game
+
+`Game` lives in `src/game/game.h` and is implemented across:
+
+- `game.cpp` - construction, run loops, snapshots, input application
+- `game_step.cpp` - per-tick gameplay rules
+- `game_render.cpp` - terminal rendering
+
+This is not a full ECS. `Game` owns vectors of aliens, bullets, shields,
+power-ups, explosions, stars, and boss/UFO state directly. That keeps the
+current game easy to follow, but it also means changes to `Game` need
+care. If a new system only needs to react to something, prefer events or
+an observer-style path instead of adding more direct responsibilities to
+`Game`.
+
+## Input Sources
+
+All play modes use `IInputSource`:
 
 ```cpp
-struct IInputSource {
-    virtual std::uint8_t poll(std::uint32_t tick,
-                              const Game& g,
-                              int playerId) = 0;
+std::uint8_t poll(std::uint32_t tick, const Game& g, int playerId);
+```
+
+The returned byte is an action mask from `src/core/action.h`:
+
+```text
+LEFT, RIGHT, SHOOT, PAUSE, QUIT, CONSOLE
+```
+
+Current input sources:
+
+| Source | Use |
+|---|---|
+| `KeyboardSource` | Terminal player input |
+| `SDL3Keyboard` | SDL3 player input |
+| `AISource` | AI demo, training, tuning |
+| `ReplaySource` | Replay playback and verification |
+| `CoopSource` | LAN co-op |
+
+This is one of the important extension points. A controller input path,
+for example, should produce the same action mask instead of changing the
+simulation API.
+
+## Fixed Tick Loop
+
+Gameplay advances in fixed ticks. Rendering may happen at a different
+rate, especially in SDL3, but simulation changes happen inside the tick.
+
+The rough order is:
+
+```text
+clear events
+apply input
+record replay frame
+update timers
+move aliens / boss / UFO
+spawn enemy shots
+move bullets and resolve collisions
+update power-ups
+advance level if needed
+```
+
+SDL3 calls the same stepping path from its own event/render loop. It
+captures previous positions before a tick and interpolates during draw.
+Rendering should not change gameplay state.
+
+## Replays
+
+Replays store inputs, not snapshots or video.
+
+```cpp
+struct InputFrame {
+    uint32_t tick;
+    uint8_t p1;
+    uint8_t p2;
 };
 ```
 
-Implementations:
+The replay header stores seed, difficulty, mode, player, and optionally
+expected score/level. The body stores input frames, with RLE compression
+for repeated masks.
 
-| Class            | Used by                                                |
-|------------------|--------------------------------------------------------|
-| `KeyboardSource` | Human play. Reads from the atomic flags set by the input thread. |
-| `AISource`       | AI demo, AI vs AI, training, GA evolution.             |
-| `ReplaySource`   | `[6] Replay`, `--verify-replay`, determinism tests.    |
-| `CoopSource`     | Network co-op. Dispatches on `playerId == self_player_` to either send our keyboard mask or receive the peer's. |
-| `Dual` (anon)    | AI vs AI. Wraps two `AISource` instances, one per player slot. |
+SDL3 records and plays replays. Terminal mode also verifies them:
 
-Adding a new control source — say, a recorded-gesture replayer or a
-network spectator — is one new class implementing `poll()`. The Game
-loop never needs to know.
-
-### `Game` class
-
-Defined in `src/game/game.h`, split across:
-- `game.cpp` — constructors, `run`, `run_headless`, `apply_action`,
-  `step`, `snap`, debug console.
-- `game_step.cpp` — per-tick game logic: alien movement, shooting,
-  collisions, level transitions, boss AI.
-- `game_render.cpp` — drawing the world to `RBuf` and the HUD line.
-
-The split exists to keep each file under ~350 lines and navigable.
-They share the same private state through `game.h`.
-
-### Action masks
-
-Defined in `src/core/action.h`:
-
-```cpp
-LEFT    = 1 << 0
-RIGHT   = 1 << 1
-SHOOT   = 1 << 2
-PAUSE   = 1 << 3
-QUIT    = 1 << 4
-CONSOLE = 1 << 5
+```bash
+./build/si_pro --verify-replay player_last.rpl
 ```
 
-This is the unit of currency between input sources, the game loop, the
-network protocol, and the replay format. One byte per player per tick.
+Be careful when changing simulation order, RNG calls, input masks, or
+replay parsing. Old replays may stop verifying if those change.
 
-### `InputFrame`
+## Events
 
-```cpp
-struct InputFrame { uint32_t tick; uint8_t p1, p2; };
+`src/core/game_event.h` defines small gameplay events emitted by `Game`
+each tick:
+
+- `BulletFired`
+- `AlienKilled`
+- `PowerupCollected`
+- `BossPhaseChanged`
+- `PlayerHit`
+- `LevelCleared`
+
+SDL3 audio and Director AI can consume these events instead of guessing
+from state changes. The event buffer is cleared at the start of each
+simulation step.
+
+## Director AI
+
+The Director is separate from the player AI.
+
+- `AISource` chooses player actions.
+- `Director` watches the run and adjusts pressure.
+
+The Director computes modifiers for alien shooting, alien movement, and
+power-up drops. The SDL3 loop applies those modifiers to `Game`. Replay
+playback disables Director modifiers so a replay is not changed by live
+adaptive difficulty.
+
+## Networking
+
+LAN co-op uses TCP input lockstep. Each peer sends its local action mask
+and receives the other player's mask each tick. Both sides start from the
+same seed and difficulty.
+
+The code path is intentionally small:
+
+```text
+KeyboardSource -> CoopSource -> Game
 ```
 
-This struct is the single primitive that powers both the replay
-format and the network protocol. A replay file is a sequence of
-`InputFrame`s (RLE-encoded). A network tick is one byte from each peer.
+The current networking path is terminal-first. SDL3 co-op would need UI
+work before it is pleasant to use.
 
-## Networking protocol
+## Headless Tools
 
-Input-lockstep over TCP. Wire format:
+`Game::run_headless()` runs simulation without rendering or sleeping.
+It is used by:
 
-```
-                    HOST                              CLIENT
-                      │                                 │
-        Listen(7777)  │                                 │
-        Accept(client)│ <───── connect(host_ip) ───────│
-                      │                                 │
-        sendLine      │ ─── "HELLO <seed> <diff>\n" ──> │
-                      │                                 │
-                      │ <───────────── "OK\n" ────────  │ sendLine
-                      │                                 │
-                      │                                 │
-   per tick (12.5 fps): every peer sends 1 byte (its own player's input
-   mask) and receives 1 byte (the peer's). Both peers seed std::mt19937
-   from the same value and step their Game instance identically. No
-   state-sync packets are ever sent.
-```
+- replay verification
+- benchmark mode
+- AI training
+- GA tuning
+- determinism tests
 
-**Why this works.** The simulation is fully deterministic — same seed +
-same input sequence ⇒ same result, byte for byte. As long as both
-peers agree on the seed (set by HELLO) and on each tick's inputs
-(exchanged each frame), they cannot drift. Desync is structurally
-impossible.
+This is one of the cleaner parts of the project. Keep it boring.
 
-**Why TCP, not UDP.** A 12.5-fps real-time loop over loopback or LAN
-has trivial latency. TCP gives us ordering and reliability for free.
-UDP would force us to write our own ACK/retry. Not worth it.
+## Persistent Files
 
-**Failure mode.** If either peer disconnects, the next `recvAll(&m, 1)`
-returns `false`. `CoopSource` sets a shared `dead` atomic flag, which
-`Game::run` checks each frame and treats as game-over with a
-"** PEER DISCONNECTED **" banner.
+Most runtime files are plain text.
 
-## Determinism guarantees
+| File | Purpose |
+|---|---|
+| `<user>_save.dat` | Saved run state |
+| `<user>_record.dat` | Personal best |
+| `<user>_stats.dat` | Lifetime stats |
+| `<user>_ach.dat` | Achievements |
+| `<user>_curves.csv` | Per-level telemetry |
+| `<user>_last.rpl` | Latest human replay |
+| `<user>_ai_last.rpl` | Latest AI demo replay |
+| `leaderboard.dat` | Top scores |
+| `*.rpl` | Replay files |
+| `*.lvl` | Level files |
+| `ai_train.csv` | AI training output |
+| `ai_evolve.csv` | GA tuning output |
+| `si_pro.cfg` | Config |
+| `si_pro.log.<pid>` | Logs |
 
-Two facts the test suite verifies:
+Plain text makes these files easy to inspect and diff. The tradeoff is
+that parsers need to stay tolerant of older files.
 
-1. `std::mt19937` produces the same sequence for the same seed — test
-   `test_rng` checks 1000 samples and reseed behavior.
-2. Two `Game` instances constructed with the same seed and difficulty
-   produce identical `snap()` snapshots — test `test_determinism`.
+## Replay Format
 
-These two facts together imply that the network co-op cannot desync if
-the underlying TCP stream is intact. (It cannot lose or reorder bytes,
-because TCP.)
+Example:
 
-## Concurrency
-
-Three things run concurrently in solo / co-op mode:
-
-1. **Main thread** — drives `Game::run`. Polls input sources, calls
-   `step`, renders, sleeps 80 ms.
-2. **Input thread** — `input_thread_main` in
-   `src/input/input_source.cpp`. Blocks in `kb_available()`,
-   sets atomic flags on `InputState`. The main thread reads those
-   flags via `KeyboardSource::poll()`.
-3. **Logger** — protected by `std::mutex`; safe to call from any
-   thread.
-
-There are no other threads. The network co-op does its socket I/O on
-the main thread, inside `CoopSource::poll()`. This is fine because
-TCP `recv`/`send` calls at ~12 Hz over loopback or LAN are nowhere
-near saturating a thread.
-
-## Headless game loop
-
-`Game::run_headless(p1, p2, max_ticks)` simulates without rendering
-or sleeping. It's the entry point shared by:
-
-- `test_determinism.cpp` — invariant checks
-- `tools::verify_replay` — `--verify-replay`
-- `tools::benchmark` — `--benchmark N`
-- `tools::evolve_ai` — `--evolve-ai N`
-- `run_train_ai` — `--train-ai N`
-
-The split between `run` (interactive: render + sleep + cursor control)
-and `run_headless` (pure simulation) is the cleanest seam in the
-codebase. Almost everything analyzable was unlockable by making this
-one cut.
-
-## File formats
-
-All persistent data is plain text. Easy to grade. Easy to diff.
-
-| File                    | Format                                                  |
-|-------------------------|---------------------------------------------------------|
-| `<user>_save.dat`       | One whitespace-separated line of game state + alien grid. |
-| `<user>_record.dat`     | `<score> <level>\n<difficulty name>\n`                  |
-| `<user>_stats.dat`      | Ten ints on one line.                                   |
-| `<user>_ach.dat`        | `<key> <unlocked?>\n` per line.                         |
-| `<user>_curves.csv`     | Per-level telemetry CSV.                                |
-| `<user>_last.rpl`       | Auto-saved replay of the last solo run.                 |
-| `leaderboard.dat`       | Top-10 records.                                         |
-| `*.rpl`                 | Replay file, header + RLE-encoded body.                 |
-| `*.lvl`                 | Level file: name, seed, alien grid, shield grid.        |
-| `ai_train.csv`          | Training output: one row per game.                      |
-| `ai_evolve.csv`         | GA output: best/mean + winning weights per generation.  |
-| `si_pro.cfg`            | `key = value` config; written by the in-game Settings.  |
-| `si_pro.log.<pid>`      | Timestamped log lines (when logging enabled).           |
-
-### Replay format details
-
-```
+```text
 HEADER seed=12345 diff=2 mode=solo player=anurag score=4250 level=3
 0 4 0
 1 4 0
 RUN 47 0 0 2
 49 1 0
-...
 ```
 
-The header carries the seed, difficulty, mode, player name, and
-optionally the expected final score and level (used by
-`--verify-replay`).
+Frame lines use:
 
-The body is one line per tick of the form `<tick> <p1_mask> <p2_mask>`,
-or one RLE compression line of the form
-`RUN <count> <p1_mask> <p2_mask> <start_tick>` representing `count`
-consecutive ticks with the same masks starting at `start_tick`. RLE
-runs are emitted when 3 or more consecutive ticks have identical
-masks (common: most ticks have no input). The loader auto-detects the
-line type, so older non-RLE replays still load.
-
-### Level format details
-
+```text
+<tick> <p1_mask> <p2_mask>
 ```
+
+RLE lines use:
+
+```text
+RUN <count> <p1_mask> <p2_mask> <start_tick>
+```
+
+The loader accepts both formats.
+
+## Level Format
+
+Example:
+
+```text
 NAME My Test Wave
 SEED 42 AUTHOR anurag
 TIMING 6 22
@@ -280,90 +267,35 @@ X.X.X.X.X.X
 ####
 ```
 
-Three lines of header (`NAME`, `SEED..AUTHOR`, `TIMING`, `BOSS`),
-three lines of 11-column alien grid (`X` = present, `.` = empty),
-two lines of 4-column shield template (`#` = brick, `.` = empty).
+Alien rows use `X` for present and `.` for empty. Shield rows use `#`
+for a brick and `.` for empty.
 
-## AI utility function
+## Tests Worth Knowing
 
-Defined in `src/input/ai_source.cpp`. Each tick, three candidate
-x-positions are scored:
+| Test | Why it matters |
+|---|---|
+| `test_determinism.cpp` | Same seed/input should produce same snapshot |
+| `test_replay.cpp` | Replay files round-trip |
+| `test_events.cpp` | Event emission stays visible |
+| `test_director.cpp` | Director beat behavior |
+| `test_config.cpp` | Config keys stay persistent |
 
+Run everything with:
+
+```bash
+ctest --test-dir build --output-on-failure
 ```
-U(x) = − w_danger · danger(x)
-       + w_align  · alignment(x)
-       + w_pickup · pickup(x)
-       − w_center · |x − W/2|
-```
 
-- `danger(x)` — sum over incoming alien bullets, weighted by inverse
-  vertical distance. Bullets close to the player and in the column
-  count more.
-- `alignment(x)` — proximity to the closest live target (alien, UFO,
-  or boss).
-- `pickup(x)` — proximity to falling power-ups.
-- The center bias keeps the AI from getting stuck in a corner without
-  escape routes.
+## What To Read First
 
-The action with the highest `U(x)` is chosen. Shooting is decoupled:
-fire when a target is in the column AND no friendly bullet already
-occupies the lane.
+If you are new to the codebase, read in this order:
 
-Three preset profiles ship in the box (`aggressive`, `defensive`,
-`balanced`). The `--evolve-ai` GA mutates these weights and selects
-for fitness across many simulated games.
+1. `src/game/game.h`
+2. `src/input/input_source.h`
+3. `src/game/game.cpp`
+4. `src/game/game_step.cpp`
+5. `src/main_sdl3.cpp`
+6. `src/persistence/replay_file.cpp`
+7. `tests/test_determinism.cpp`
 
-## Settings persistence flow
-
-1. `main()` calls `load_config("si_pro.cfg", cfg)` at startup.
-2. Settings flow into `ui::opts()` (rendering) and `i18n::set_language()`
-   (UI text).
-3. The user enters the menu, presses `S`, edits values, presses `W`.
-4. `save_config("si_pro.cfg", cfg)` writes the new values back.
-5. Changes take effect immediately for `ui::opts()` and language;
-   the rest applies on next launch or next `run_solo()` call.
-
-## Why this is structured the way it is
-
-A few specific architectural decisions I want to justify:
-
-- **Single-file `Game` class.** Boss / UFO / power-ups all touch the
-  same set of vectors; splitting them across classes would require
-  exposing all state through public accessors, which is worse than the
-  current arrangement. The Game *file* is split (three .cpp); the
-  class isn't.
-
-- **`IInputSource` polymorphism.** This is the dependency inversion
-  that lets us add new modes (AI vs AI, replay, networking) without
-  touching the run loop. Five implementations live behind it; the run
-  loop knows about exactly one.
-
-- **Plain-text formats everywhere.** A grader can open a `.rpl` and
-  see what happened. A `.lvl` is hand-editable. A `.dat` is `cat`-able.
-  This matters for academic work; a binary format would have been
-  marginally faster and infinitely worse to grade.
-
-- **Headless simulation as a separate entry point.** I tried at one
-  point to make `Game::run` itself skip rendering when a flag was set.
-  It worked but the conditionals leaked into every render call.
-  Splitting it into two functions sharing a `step()` helper was much
-  cleaner.
-
-- **No external dependencies.** Just the C++ standard library and OS
-  sockets. This matters for cross-platform builds and for graders who
-  might not have package managers configured.
-
-## What to read first
-
-If you have one hour to understand the codebase:
-
-1. `src/game/game.h` — the central data model.
-2. `src/input/input_source.h` — the polymorphism that makes
-   everything else work.
-3. `src/game/game.cpp` — `Game::run` and `Game::step`.
-4. `src/input/ai_source.cpp` — the AI utility function in 30 lines.
-5. `src/input/coop_source.cpp` — how the network protocol is just
-   send-then-recv per tick.
-6. `tests/test_determinism.cpp` — the proof that lockstep can't desync.
-
-That's about 600 lines total and covers 80% of the system.
+That gives you the shape of the project without reading every file.

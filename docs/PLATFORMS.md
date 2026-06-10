@@ -1,8 +1,8 @@
 # Cross-Platform Build Notes
 
 This document explains how `si_pro` compiles on three operating systems
-from one source tree, and what a grader can do to verify each platform
-without me having to take their word for it.
+from one source tree, and how contributors or release maintainers can
+verify each platform independently.
 
 The short version: there is **one** `#ifdef _WIN32` in the entire
 codebase, in `src/platform/platform.h`. Everything else is portable
@@ -190,8 +190,8 @@ three layers of defence:
    the colliding identifiers); the user-facing macros `LOG_DEBUG`
    and `LOG_ERROR` keep their old names by mapping to the new enum.
 
-This is the standard cross-platform-C++ workaround and is documented
-in section 5.1 of the project report.
+This is the standard cross-platform C++ workaround and is worth keeping
+in mind whenever platform headers are included.
 
 ---
 
@@ -200,7 +200,7 @@ in section 5.1 of the project report.
 ### Linux
 
 ```bash
-unzip si_pro.zip
+git clone <repo-url> si_pro
 cd si_pro
 make
 ./si_pro --version
@@ -213,7 +213,7 @@ your distribution's equivalent.
 ### macOS
 
 ```bash
-unzip si_pro.zip
+git clone <repo-url> si_pro
 cd si_pro
 make                    # uses Apple Clang via /usr/bin/c++
 ./si_pro --version
@@ -238,15 +238,15 @@ cmake --build build -j
 cd build && ctest          # if tests are wired in CMake
 ```
 
-If neither works on your Mac, paste the exact `make` error message and
-I (Anurag) can fix it before viva — most likely a one-line tweak
-because Apple Clang flagged something GCC didn't.
+If neither works on your Mac, open an issue or pull request with the
+exact `make` or CMake error. Most likely fixes are small portability
+tweaks exposed by Apple Clang.
 
 ### Windows
 
 Two paths depending on what's installed:
 
-**With MinGW (recommended for a grader):**
+**With MinGW:**
 ```powershell
 cd si_pro
 g++ -std=c++17 -O2 -Wall -Wextra -Wpedantic -Isrc `
@@ -302,10 +302,10 @@ project.
 | Windows (MinGW) | ✅ Built by author | ⚠️ Author confirms binary runs | ✅ See demo video | ✅ Yes (workflow) |
 | macOS (Apple Clang) | ❌ Not on real hardware | ❌ Not directly | ❌ Not directly | ✅ Yes (workflow) |
 
-The macOS row is the honest gap. If a grader has a Mac and runs the
-five commands listed above, they will be the first to actually verify
-the build on Apple hardware. The CI matrix is set up to catch any
-problem on push to GitHub.
+The macOS row is the honest gap. If a contributor has a Mac and runs the
+commands listed above, that result should be captured in an issue, pull
+request, or release note. The CI matrix is set up to catch platform
+problems on push to GitHub.
 
 The codebase contains no Linux-specific APIs, no Mac-specific APIs,
 no Windows-specific APIs outside `platform_win32.cpp`. Every

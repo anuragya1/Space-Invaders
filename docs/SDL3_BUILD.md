@@ -1,32 +1,35 @@
 # SDL3 Build Quick Start
 
-The terminal version of Space Invaders is the *primary* submission and
-builds with `make` exactly as before. This document covers the additional
-SDL3 windowed build.
+The SDL3 build is the version most players should try first. It uses the
+same game simulation as the terminal build, but with a window, renderer,
+audio, menus, particles, interpolation, and replay playback.
 
-## What the SDL3 build provides
+Terminal mode still matters for replay verification, LAN co-op, level
+editing, localization, benchmarking, and AI tools.
 
-A windowed (1120 x 512 pixels) version of the game with:
+## Current SDL3 Features
 
-- Vsync-paced rendering with logic-tick at 12.5 fps (configurable)
-- State-polled keyboard input via `SDL_GetKeyboardState`
-  (fixes the input-lag issue of the terminal version)
-- Same Game engine, same AI, same difficulty system, same persistence
-  (stats, achievements, leaderboard) - only render + input are new
-- AI demo mode (`--ai-demo`) renders the AI agent playing in the window
-- Boss, UFO, power-ups all render and work
-- Restart on game-over, pause, quit
+- Windowed rendering at 1120 x 512 logical size.
+- Fixed simulation tick with interpolated rendering.
+- Keyboard input through SDL3.
+- SDL3 audio and simple music.
+- Bosses, UFO, shields, power-ups, stats, achievements, and menus.
+- AI demo mode.
+- Reduced Motion setting.
+- Replay recording to `<user>_last.rpl`.
+- Replay playback from **Watch Replay**.
 
-What the SDL3 build does NOT support today (kept terminal-only):
-- Network co-op (`--host` / `--join`)
-- Replay playback / verification
-- In-game level editor
-- Settings menu / i18n switch
+Still terminal-first:
 
-## Installing SDL3
+- Replay verification: `--verify-replay`
+- LAN co-op: `--host` / `--join`
+- Level editor
+- Hindi localization
+- Benchmarking and AI training tools
 
-SDL3 is the current stable line (3.2 was the first production-ready
-release in early 2025). Make sure you install SDL3, not SDL2.
+## Install SDL3
+
+Install SDL3 3.2+ development libraries.
 
 ### Linux
 
@@ -41,7 +44,7 @@ sudo dnf install SDL3-devel
 sudo pacman -S sdl3
 ```
 
-If your distribution does not yet ship SDL3 packages, build from source:
+If your distro does not ship SDL3 yet:
 
 ```bash
 git clone --depth 1 https://github.com/libsdl-org/SDL.git
@@ -58,162 +61,145 @@ sudo ldconfig
 brew install sdl3
 ```
 
-### Windows with MinGW (matches the setup used for the terminal build)
+### Windows with MinGW
 
-Easiest path: download the prebuilt SDL3 development libraries from
-`https://github.com/libsdl-org/SDL/releases` - pick the
-`SDL3-devel-X.Y.Z-mingw.zip` release that matches your MinGW.
+Download `SDL3-devel-X.Y.Z-mingw.zip` from:
 
-Extract it to `C:\SDL3\` (or any path; we pass it to make via
-`SDL3_DIR`).
+```text
+https://github.com/libsdl-org/SDL/releases
+```
 
-You will need to copy `SDL3.dll` next to `si_pro_sdl3.exe` after
-building (or add the SDL3 `bin/` directory to your PATH). The DLL lives
-under `C:\SDL3\bin\` (or `x86_64-w64-mingw32/bin/` inside the zip).
+Extract it somewhere predictable, for example:
 
-## Building
+```text
+C:\SDL3
+```
 
-### Linux / macOS
+After building, copy `SDL3.dll` next to `si_pro_sdl3.exe`, or add the
+SDL3 `bin` directory to your PATH.
+
+## Build
+
+### CMake
+
+```bash
+cmake -S . -B build -DSI_BUILD_SDL3=ON
+cmake --build build --target si_pro_sdl3 -j
+./build/si_pro_sdl3
+```
+
+### Make on Linux/macOS
 
 ```bash
 make sdl3
 ./si_pro_sdl3
 ```
 
-The Makefile uses `pkg-config sdl3` to find the headers and libraries.
-If your SDL3 install is not on the default pkg-config path, set
-`PKG_CONFIG_PATH` first:
+If `pkg-config` cannot find SDL3:
 
 ```bash
 export PKG_CONFIG_PATH=$HOME/.local/lib/pkgconfig
 make sdl3
 ```
 
-### Windows (MinGW)
+### Make on Windows/MinGW
 
 ```bash
-# from the project root, with SDL3 extracted to C:\SDL3
 make sdl3 SDL3_DIR=C:/SDL3
-
-# copy the DLL alongside the exe
 cp C:/SDL3/bin/SDL3.dll .
-
-# run
 si_pro_sdl3.exe
 ```
 
-### CMake (any platform)
+## Run
 
 ```bash
-cmake -B build -DSI_BUILD_SDL3=ON
-cmake --build build --target si_pro_sdl3
 ./build/si_pro_sdl3
+./build/si_pro_sdl3 --ai-demo
+./build/si_pro_sdl3 --diff 3
+./build/si_pro_sdl3 --diff 0 --seed 12345 --user anurag
+./build/si_pro_sdl3 --fullscreen
+./build/si_pro_sdl3 --help
+./build/si_pro_sdl3 --version
 ```
 
-The CMake target uses SDL3's official `find_package(SDL3 CONFIG)`
-support, which works as long as SDL3 was installed via a package
-manager or `cmake --install`.
+## Replays
 
-## Running
+SDL3 writes the latest human run to:
+
+```text
+<user>_last.rpl
+```
+
+AI demo runs use:
+
+```text
+<user>_ai_last.rpl
+```
+
+These files are written to the directory you launched the game from.
+If you run `./build/si_pro_sdl3` from the repo root, the replay appears
+in the repo root. If you run the executable from inside `build/`, it
+appears inside `build/`.
+
+To watch a replay, open SDL3, choose **Watch Replay**, and enter the
+filename. Typing `alpha_last` is enough; `.rpl` is added if the filename
+has no extension.
+
+SDL3 searches the common places that come up during development:
+
+- the current working directory
+- `build/` under the current working directory
+- the parent directory
+- the executable directory
+- the executable directory's parent
+
+Replay playback does not submit leaderboard scores, update lifetime
+stats, or overwrite the last-run replay.
+
+Use the terminal build for verification:
 
 ```bash
-./si_pro_sdl3                 # default solo, difficulty 1, random seed
-./si_pro_sdl3 --ai-demo       # watch the AI play
-./si_pro_sdl3 --diff 3        # nightmare difficulty
-./si_pro_sdl3 --diff 0 --seed 12345 --user anurag
-./si_pro_sdl3 --help
-./si_pro_sdl3 --version
+./build/si_pro --verify-replay player_last.rpl
 ```
 
 ## Controls
 
 | Key | Action |
 |---|---|
-| A or Left arrow | Move left |
-| D or Right arrow | Move right |
+| A / Left Arrow | Move left |
+| D / Right Arrow | Move right |
 | Space | Shoot |
 | P | Pause |
-| Q | Quit (saves stats and leaderboard) |
-| R | Restart (only on game-over screen) |
-| Esc | Close window |
-
-## Architecture
-
-The SDL3 port is purely additive - no existing terminal code was
-modified. New files:
-
-```
-src/input/sdl3_keyboard.h     # IInputSource using SDL_GetKeyboardState
-src/render/sdl3_renderer.h    # SDL3Renderer class - public API
-src/render/sdl3_renderer.cpp  # SDL3Renderer implementation
-src/main_sdl3.cpp             # SDL3 entry point (parallel to main.cpp)
-```
-
-Existing terminal code is reused entirely:
-
-- `src/game/` - Game class, step(), render() (terminal-only)
-- `src/core/` - entities, RNG, difficulty, constants
-- `src/input/` - IInputSource, AISource (used by `--ai-demo` mode)
-- `src/persistence/` - stats, achievements, leaderboard
-- All tests still pass after the additions (verified)
-
-This is the architectural payoff of the original design. Five lines of
-public API exposure on `Game` (`step_pub`, `tick_flash_decay`,
-`is_game_over`, `is_paused`, `flash_msg`) are enough to drive the
-windowed loop; everything else carries over from the terminal build
-unchanged.
-
-## Why SDL3 specifically (and not SDL2)
-
-SDL3 is now the recommended target for new C/C++ games. SDL3.2 was the
-first production-ready release in early 2025, and SDL2 is in maintenance
-mode. Notable benefits used in this build:
-
-- `SDL_RenderDebugText` provides a built-in 8x8 bitmap font, eliminating
-  the SDL_ttf dependency that an SDL2 port would need for HUD text.
-- `SDL_GetKeyboardState` returns `const bool*` (cleaner than SDL2's
-  `Uint8*`) and is what makes the lag-free movement work.
-- `SDL_FRect` everywhere means rendering is naturally in subpixel
-  precision without manual conversions.
-- `SDL_CreateWindowAndRenderer` is a single call.
+| Q | Quit current run |
+| R | Restart from game-over screen |
+| M | Toggle mute |
+| F11 | Toggle fullscreen |
+| Esc | Back / close |
 
 ## Troubleshooting
 
 ### `SDL3/SDL.h: No such file or directory`
 
-The compiler can't find SDL3 headers. On Windows, make sure
-`SDL3_DIR=...` points to your extracted SDL3 SDK and that
-`$SDL3_DIR/include/SDL3/SDL.h` actually exists. On Linux, install
-`libsdl3-dev` (or your distribution's equivalent), or set
-`PKG_CONFIG_PATH` so `pkg-config sdl3` resolves.
+Install SDL3 development headers. On Windows, check that `SDL3_DIR`
+points to the extracted SDK and contains `include/SDL3/SDL.h`.
 
 ### `Package sdl3 was not found in the pkg-config search path`
 
-Same root cause as above. Either install SDL3 from your distribution,
-or after building SDL3 from source, run `sudo ldconfig` and check
-`pkg-config --modversion sdl3`.
+Install your distro's SDL3 development package, or set
+`PKG_CONFIG_PATH` to the directory containing `sdl3.pc`.
 
 ### `undefined reference to SDL_CreateWindow`
 
-Linker can't find the SDL3 library. On Windows, check `SDL3_DIR` points
-at a directory that contains `lib/libSDL3.dll.a` (or equivalent). On
-Linux, make sure `pkg-config --libs sdl3` prints `-lSDL3` - if it's
-empty, the package isn't installed for pkg-config to find.
+The headers were found but the library was not linked. Check your SDL3
+install path. On Linux, `pkg-config --libs sdl3` should print `-lSDL3`
+or equivalent linker flags.
 
-### Window opens, then closes immediately on Windows
+### Window opens, then closes on Windows
 
-Most likely cause: `SDL3.dll` is not next to the exe. Copy it from
-`<SDL3>/bin/SDL3.dll` to the same folder as `si_pro_sdl3.exe`.
+`SDL3.dll` is probably missing beside the executable. Copy it from the
+SDL3 SDK `bin` directory.
 
-### `SDL_Init failed: ...`
+### `SDL_Init failed`
 
-The error message after the colon is from SDL. The most common cause on
-Linux is a headless environment with no display server - the SDL3 build
-needs a graphical session (X11 or Wayland). Use the terminal version
-(`./si_pro`) over SSH instead.
-
-### Aliens move too fast / too slow
-
-Edit `src/core/constants.h` - `FRAME_MS = 80` is the logical tick
-interval. Lower = faster game, higher = slower. The SDL3 build inherits
-this same constant.
+The SDL error after the colon is the useful part. On headless Linux or
+SSH sessions, use the terminal build instead.

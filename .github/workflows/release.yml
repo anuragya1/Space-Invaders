@@ -1,0 +1,137 @@
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version, for example v0.2.0
+        required: true
+        default: v0.1.0
+      prerelease:
+        description: Mark the GitHub Release as prerelease
+        required: true
+        type: boolean
+        default: true
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  package-terminal:
+    name: Package terminal build (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x64
+            os: ubuntu-latest
+            archive: space-invaders-pro-linux-x64.tar.gz
+            binary: si_pro
+          - name: macos
+            os: macos-latest
+            archive: space-invaders-pro-macos.tar.gz
+            binary: si_pro
+          - name: windows-x64
+            os: windows-latest
+            archive: space-invaders-pro-windows-x64.zip
+            binary: si_pro.exe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build terminal target
+        run: cmake --build build --config Release --target si_pro -j
+
+      - name: Build tests
+        run: cmake --build build --config Release -j
+
+      - name: Run tests
+        run: ctest --test-dir build -C Release --output-on-failure
+
+      - name: Stage package
+        shell: bash
+        run: |
+          set -euo pipefail
+          pkg="dist/space-invaders-pro-${{ matrix.name }}"
+          mkdir -p "$pkg/docs"
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            cp "build/Release/${{ matrix.binary }}" "$pkg/"
+          else
+            cp "build/${{ matrix.binary }}" "$pkg/"
+          fi
+          cp README.md CHANGELOG.md LICENSE "$pkg/"
+          cp docs/ARCHITECTURE.md docs/SDL3_BUILD.md docs/PLATFORMS.md docs/DISTRIBUTION.md "$pkg/docs/"
+          cp docs/replay_viewer.html "$pkg/docs/"
+
+      - name: Create archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          if [[ "${{ matrix.archive }}" == *.zip ]]; then
+            cmake -E tar cf "release-assets/${{ matrix.archive }}" --format=zip "dist/space-invaders-pro-${{ matrix.name }}"
+          else
+            cmake -E tar czf "release-assets/${{ matrix.archive }}" "dist/space-invaders-pro-${{ matrix.name }}"
+          fi
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.archive }}
+          path: release-assets/${{ matrix.archive }}
+
+  package-website:
+    name: Package website
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stage website
+        run: |
+          mkdir -p release-assets
+          cmake -E tar cf release-assets/space-invaders-pro-website.zip --format=zip website
+
+      - name: Upload website artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: space-invaders-pro-website.zip
+          path: release-assets/space-invaders-pro-website.zip
+
+  publish:
+    name: Publish GitHub Release
+    needs:
+      - package-terminal
+      - package-website
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+          prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
+          files: release-assets/*
+          body: |
+            ## Space Invaders - Pro Edition
+
+            This release contains validated terminal packages for Windows,
+            Linux, and macOS, plus the static project website package.
+
+            SDL3 packages will be added once runtime packaging is
+            validated on each platform. See docs/DISTRIBUTION.md for the
+            current package plan and checklist.

@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Space Invaders - Pro Edition, a C++17 arcade project with SDL3 rendering, deterministic replays, Director AI, bosses, and co-op tooling.">
+  <title>Space Invaders - Pro Edition</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#hero">Space Invaders <span>Pro Edition</span></a>
+    <nav aria-label="Primary navigation">
+      <a href="#features">Features</a>
+      <a href="#downloads">Download</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#roadmap">Roadmap</a>
+      <a href="#contribute">Contribute</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" id="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">C++17 arcade game</p>
+        <h1>Space Invaders - Pro Edition</h1>
+        <p class="lead">
+          A Space Invaders project I kept expanding after college,
+          with an SDL3 build, deterministic replays, Director Beats,
+          boss encounters, co-op tooling, and a lot of systems work
+          around a simple arcade loop.
+        </p>
+        <div class="hero-actions">
+          <a class="button primary" href="#downloads">Download latest build</a>
+          <a class="button secondary" href="https://github.com/anuragya1/si_pro-finalCut">View GitHub</a>
+        </div>
+      </div>
+      <div class="game-visual" aria-label="Stylized gameplay scene">
+        <div class="hud">
+          <span>SCORE 042500</span>
+          <span>LEVEL 05</span>
+          <span>BEAT: PRESSURE SURGE</span>
+        </div>
+        <div class="playfield">
+          <div class="boss"></div>
+          <div class="aliens row-a"><span></span><span></span><span></span><span></span><span></span></div>
+          <div class="aliens row-b"><span></span><span></span><span></span><span></span></div>
+          <div class="shot player-shot"></div>
+          <div class="shot alien-shot"></div>
+          <div class="powerup">R</div>
+          <div class="shield shield-a"></div>
+          <div class="shield shield-b"></div>
+          <div class="player"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="media-band" id="trailer">
+      <div>
+        <p class="eyebrow">Game Trailer</p>
+        <h2>The trailer should show the game, not just the idea.</h2>
+        <p>
+          The trailer slot should show the SDL3 build first: menu, normal
+          wave, power-up pickup, Director Beat indicator, boss warning,
+          replay tooling, and a final download/GitHub card.
+        </p>
+      </div>
+      <div class="trailer-frame">
+        <div class="play-icon"></div>
+        <p>Trailer placeholder</p>
+        <span>Replace with captured SDL3 gameplay footage</span>
+      </div>
+    </section>
+
+    <section class="section" id="screenshots">
+      <div class="section-heading">
+        <p class="eyebrow">Screenshots</p>
+        <h2>Show what is actually playable.</h2>
+      </div>
+      <div class="screenshot-grid">
+        <article class="shot-card">
+          <div class="mini-scene menu-scene"></div>
+          <h3>SDL3 Main Menu</h3>
+          <p>Calls sign, stats, achievements, difficulty, settings, and AI demo access.</p>
+        </article>
+        <article class="shot-card">
+          <div class="mini-scene gameplay-scene"></div>
+          <h3>Moment-to-Moment Play</h3>
+          <p>Power-ups, shields, score chasing, animated invaders, and synthesized feedback.</p>
+        </article>
+        <article class="shot-card">
+          <div class="mini-scene boss-scene"></div>
+          <h3>Boss Encounters</h3>
+          <p>Multi-stage fights with visible warning beats, attack patterns, and HP feedback.</p>
+        </article>
+        <article class="shot-card">
+          <div class="mini-scene replay-scene"></div>
+          <h3>Replay Viewer</h3>
+          <p>Inspect deterministic input logs, replay metadata, and derived player paths.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section compact" id="features">
+      <div class="section-heading">
+        <p class="eyebrow">Gameplay Features</p>
+        <h2>Classic arcade pressure, with extra systems layered in.</h2>
+      </div>
+      <div class="feature-grid">
+        <article>
+          <h3>Director Beats</h3>
+          <p>Observes the run and creates Relief Windows or Pressure Surges when the player needs a pacing shift.</p>
+        </article>
+        <article>
+          <h3>Deterministic Replays</h3>
+          <p>Input logs replay through the same simulation and can be verified against expected outcomes.</p>
+        </article>
+        <article>
+          <h3>Boss Waves</h3>
+          <p>Every fifth level introduces a staged boss with escalating attack patterns.</p>
+        </article>
+        <article>
+          <h3>Power-Up Flow</h3>
+          <p>Triple-shot, shield, and rapid-fire rewards create short tactical spikes.</p>
+        </article>
+        <article>
+          <h3>LAN Co-op</h3>
+          <p>TCP lockstep sends player inputs instead of full game state for synchronized play.</p>
+        </article>
+        <article>
+          <h3>Achievements And Stats</h3>
+          <p>Persistent progression tracks games, score, kills, accuracy, combo, and unlocks.</p>
+        </article>
+        <article>
+          <h3>Reduced Motion</h3>
+          <p>Disable screen shake from SDL3 Settings while keeping arcade feedback and gameplay intact.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="split-section" id="controls">
+      <div>
+        <p class="eyebrow">Controls</p>
+        <h2>Simple controls, quick restarts.</h2>
+        <p>
+          The SDL3 build supports low-latency keyboard input, fullscreen,
+          mute toggle, quick restart, pause, and persistent player callsign.
+        </p>
+      </div>
+      <table class="controls-table">
+        <tbody>
+          <tr><th>A / Left</th><td>Move left</td></tr>
+          <tr><th>D / Right</th><td>Move right</td></tr>
+          <tr><th>Space</th><td>Shoot</td></tr>
+          <tr><th>P</th><td>Pause</td></tr>
+          <tr><th>R</th><td>Restart after game over</td></tr>
+          <tr><th>F11</th><td>Toggle fullscreen</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="download-section" id="downloads">
+      <div class="section-heading">
+        <p class="eyebrow">Download Latest Build</p>
+        <h2>Pick a build.</h2>
+      </div>
+      <div class="download-grid">
+        <article>
+          <h3>Windows</h3>
+          <p>Recommended package: SDL3 executable plus SDL3 runtime DLL and terminal tools.</p>
+          <a href="https://github.com/anuragya1/si_pro-finalCut/releases/latest">Latest Windows build</a>
+        </article>
+        <article>
+          <h3>Linux</h3>
+          <p>Recommended package: SDL3 binary, terminal binary, docs, and dependency notes.</p>
+          <a href="https://github.com/anuragya1/si_pro-finalCut/releases/latest">Latest Linux build</a>
+        </article>
+        <article>
+          <h3>macOS</h3>
+          <p>Recommended package: signed or unsigned app bundle once macOS packaging is validated.</p>
+          <a href="https://github.com/anuragya1/si_pro-finalCut/releases/latest">Latest macOS build</a>
+        </article>
+      </div>
+      <p class="note">
+        Release packaging is prepared in the repository workflow. See
+        <a href="../docs/DISTRIBUTION.md">distribution notes</a> for the
+        current strategy and release checklist.
+      </p>
+    </section>
+
+    <section class="section" id="github">
+      <div class="github-panel">
+        <div>
+          <p class="eyebrow">GitHub Repository</p>
+          <h2>Open source, testable, and still growing.</h2>
+          <p>
+            Explore the simulation, SDL3 renderer, replay tools, Director
+          Beats, tests, architecture notes, and release workflow.
+          </p>
+        </div>
+        <a class="button primary" href="https://github.com/anuragya1/si_pro-finalCut">Open repository</a>
+      </div>
+    </section>
+
+    <section class="section compact" id="architecture">
+      <div class="section-heading">
+        <p class="eyebrow">Technical Architecture</p>
+        <h2>The core is deterministic by design.</h2>
+      </div>
+      <div class="architecture-grid">
+        <article>
+          <span>01</span>
+          <h3>Fixed Tick Simulation</h3>
+          <p>Game logic advances at a stable tick rate independent of SDL3 rendering.</p>
+        </article>
+        <article>
+          <span>02</span>
+          <h3>Input Source Abstraction</h3>
+          <p>Keyboard, AI, replay, and co-op feed the same action-mask interface.</p>
+        </article>
+        <article>
+          <span>03</span>
+          <h3>Replay And Lockstep</h3>
+          <p>Recorded input frames and network co-op use the same synchronization primitive.</p>
+        </article>
+        <article>
+          <span>04</span>
+          <h3>Renderer Separation</h3>
+          <p>SDL3 observes simulation state for interpolation, particles, shake, and HUD feedback.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="timeline" id="journey">
+      <p class="eyebrow">Development Journey</p>
+        <h2>From college project to something I kept building.</h2>
+      <ol>
+        <li><strong>Prototype:</strong> terminal arcade loop, shields, aliens, score, and levels.</li>
+        <li><strong>Systems:</strong> replay files, deterministic tests, co-op, AI, achievements, and tooling.</li>
+        <li><strong>Polish:</strong> SDL3 renderer, particles, audio, menus, stats, and Director AI.</li>
+        <li><strong>Open Source:</strong> contributor docs, roadmap, website, release workflow, and distribution notes.</li>
+      </ol>
+    </section>
+
+    <section class="section compact" id="roadmap">
+      <div class="section-heading">
+        <p class="eyebrow">Roadmap</p>
+        <h2>Focused phases, so the project does not sprawl.</h2>
+      </div>
+      <div class="roadmap-grid">
+        <article><h3>Phase 2</h3><p>Website, distribution workflow, release packaging, and download strategy.</p></article>
+        <article><h3>Phase 3</h3><p>One signature gameplay identity, selected from existing strong systems.</p></article>
+        <article><h3>Phase 4</h3><p>Event-driven architecture for audio, presentation, achievements, and telemetry.</p></article>
+        <article><h3>Phase 5</h3><p>Reduced Motion accessibility polish selected as the highest-ROI gameplay expansion.</p></article>
+      </div>
+    </section>
+
+    <section class="split-section" id="contributors">
+      <div>
+        <p class="eyebrow">Contributors</p>
+        <h2>Contributions should be easy to reason about.</h2>
+        <p>
+          I am most interested in focused pull requests for SDL3 polish,
+          release packaging, tests, documentation, accessibility, and
+          carefully scoped gameplay improvements.
+        </p>
+      </div>
+      <div class="contributor-card">
+        <h3>Maintainer</h3>
+        <p>Anurag Yadav</p>
+        <h3>Contribution Areas</h3>
+        <p>Testing, packaging, SDL3 parity, website media, accessibility, and replay tooling.</p>
+      </div>
+    </section>
+
+    <section class="section" id="changelog">
+      <div class="github-panel">
+        <div>
+          <p class="eyebrow">Changelog</p>
+          <h2>See what changed before you download.</h2>
+          <p>
+            The project changelog records user-facing changes,
+            developer-facing changes, release notes, and compatibility
+            warnings.
+          </p>
+        </div>
+        <a class="button secondary" href="../CHANGELOG.md">Read changelog</a>
+      </div>
+    </section>
+
+    <section class="section compact" id="faq">
+      <div class="section-heading">
+        <p class="eyebrow">FAQ</p>
+        <h2>Common setup questions.</h2>
+      </div>
+      <div class="faq-grid">
+        <article>
+          <h3>Do I need SDL3?</h3>
+          <p>Only for the windowed SDL3 build. The terminal tools build without external dependencies.</p>
+        </article>
+        <article>
+          <h3>Where are saves stored?</h3>
+          <p>Persistent files are plain text in the working directory, including stats, achievements, saves, and replays.</p>
+        </article>
+        <article>
+          <h3>Can I verify a replay?</h3>
+          <p>Yes. Use the terminal binary with `--verify-replay FILE` to confirm deterministic replay integrity.</p>
+        </article>
+        <article>
+          <h3>How do I contribute?</h3>
+          <p>Start with the contributor guide, run the CMake test flow, and open a focused pull request.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="contribute-section" id="contribute">
+      <p class="eyebrow">How To Contribute</p>
+      <h2>Help make the game clearer, smoother, and easier to work on.</h2>
+      <p>
+        Good first contributions include SDL3 screenshots/trailer capture,
+        packaging validation, scenario tests, docs polish, issue templates,
+        and accessibility improvements.
+      </p>
+      <div class="hero-actions">
+        <a class="button primary" href="../CONTRIBUTING.md">Read contributor guide</a>
+        <a class="button secondary" href="../ROADMAP.md">View roadmap</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Space Invaders - Pro Edition is MIT licensed and inspired by the 1978 arcade classic.</p>
+  </footer>
+</body>
+</html>
