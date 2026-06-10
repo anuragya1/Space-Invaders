@@ -47,10 +47,10 @@ jobs:
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 
       - name: Build terminal target
-        run: cmake --build build --config Release --target si_pro -j
+        run: cmake --build build --config Release --target si_pro --parallel 2
 
       - name: Build tests
-        run: cmake --build build --config Release -j
+        run: cmake --build build --config Release --parallel 2
 
       - name: Run tests
         run: ctest --test-dir build -C Release --output-on-failure
