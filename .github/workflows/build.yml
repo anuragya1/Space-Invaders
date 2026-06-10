@@ -7,59 +7,77 @@ on:
 
 jobs:
   linux:
-    name: Linux (g++ ${{ matrix.cxx }})
+    name: Linux (${{ matrix.cxx }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
         cxx: [g++-11, g++-12]
     steps:
       - uses: actions/checkout@v4
+
       - name: Install compiler
         run: |
           sudo apt-get update
           sudo apt-get install -y ${{ matrix.cxx }} lcov
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
+
       - name: Build
-        run: make CXX=${{ matrix.cxx }}
+        run: cmake --build build -j
+
       - name: Tests
-        run: make CXX=${{ matrix.cxx }} run-tests
+        run: ctest --test-dir build --output-on-failure
+
       - name: Coverage (g++-12 only)
         if: matrix.cxx == 'g++-12'
         run: |
-          make clean
-          make CXX=g++-12 CXXFLAGS="-std=c++17 -O0 -g --coverage -Isrc" run-tests
-          lcov --capture --directory . --output-file coverage.info \
+          cmake -S . -B build-coverage \
+            -DCMAKE_CXX_COMPILER=g++-12 \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_CXX_FLAGS="--coverage" \
+            -DCMAKE_EXE_LINKER_FLAGS="--coverage"
+          cmake --build build-coverage -j
+          ctest --test-dir build-coverage --output-on-failure
+          lcov --capture --directory build-coverage --output-file coverage.info \
                --ignore-errors mismatch,unused
-          lcov --remove coverage.info '/usr/*' 'tests/*' --output-file coverage.info \
+          lcov --remove coverage.info '/usr/*' '*/tests/*' --output-file coverage.info \
                --ignore-errors unused
           lcov --list coverage.info
+
       - name: Upload coverage to Codecov
         if: matrix.cxx == 'g++-12'
         uses: codecov/codecov-action@v4
         with:
           files: coverage.info
-          fail_ci_if_error: false   # codecov outages should not fail the build
-          # If your repo is public, no token is needed. If private, add
-          # CODECOV_TOKEN as a repo secret and uncomment the line below.
-          # token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
 
   macos:
     name: macOS (clang)
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S . -B build
+
       - name: Build
-        run: make
+        run: cmake --build build -j
+
       - name: Tests
-        run: make run-tests
+        run: ctest --test-dir build --output-on-failure
 
   windows:
-    name: Windows (MinGW)
+    name: Windows (MSVC)
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S . -B build
+
       - name: Build
-        shell: bash
-        run: make
+        run: cmake --build build --config Release -j
+
       - name: Tests
-        shell: bash
-        run: make run-tests
+        run: ctest --test-dir build -C Release --output-on-failure
