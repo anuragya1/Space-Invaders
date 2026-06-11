@@ -9,6 +9,7 @@
 #ifdef _WIN32
     #include <ws2tcpip.h>
 #else
+    #include <sys/select.h>  // fixes macOS build error because select() needs this header
     #include <sys/socket.h>
     #include <netinet/in.h>
     #include <arpa/inet.h>
