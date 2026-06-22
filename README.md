@@ -197,16 +197,7 @@ easier to build, test, play, package, or understand. Start with
 [CONTRIBUTING.md](CONTRIBUTING.md) and [ROADMAP.md](ROADMAP.md).
 
 ## Origins
-
-I originally built this as my final-year college project. I am keeping
-that history visible, but the project is no longer just a submission.
-The current goal is to keep improving it as an open-source game and a
-portfolio codebase.
-
 The original 1978 *Space Invaders* arcade game is by Tomohiro Nishikado
 at Taito Corporation. This project is a tribute and does not include
 original Taito code or assets.
 
-## License
-
-MIT. See [LICENSE](LICENSE).
