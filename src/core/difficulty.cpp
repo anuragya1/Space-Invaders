@@ -1,4 +1,3 @@
-// difficulty.cpp
 #include "difficulty.h"
 
 #include <algorithm>
@@ -20,4 +19,4 @@ const Diff& difficulty(int idx) {
 
 const Diff& difficulty_unchecked(int idx) { return kDiffs[idx]; }
 
-} // namespace si
+}

@@ -1,4 +1,3 @@
-// test_events.cpp - explicit gameplay event emission.
 #include "test_common.h"
 #include "../src/core/action.h"
 #include "../src/core/game_event.h"
@@ -14,7 +13,7 @@ bool has_event(const si::Game& g, si::GameEventType type) {
     return std::any_of(events.begin(), events.end(),
         [type](const si::GameEvent& e) { return e.type == type; });
 }
-} // namespace
+}
 
 int main() {
     using namespace si;

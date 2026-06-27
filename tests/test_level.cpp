@@ -1,8 +1,10 @@
-// test_level.cpp - .lvl file round-trip.
 #include "test_common.h"
+#include "../src/game/game.h"
+#include "../src/persistence/achievements.h"
 #include "../src/persistence/level_file.h"
 
 #include <cstdio>
+#include <fstream>
 
 int main() {
     using namespace si;
@@ -36,6 +38,32 @@ int main() {
         for (int c = 0; c < 4; ++c)
             CHECK_EQ(a.shield[r][c], b.shield[r][c]);
 
+    b.boss = false;
+    Stats stats;
+    auto achievements = achievements_default();
+    Game g(1, Mode::SOLO, b, stats, achievements);
+    int expectedAlive = 0;
+    for (int r = 0; r < AROWS; ++r)
+        for (int c = 0; c < ACOLS; ++c)
+            if (b.aliens[r][c]) ++expectedAlive;
+    CHECK_EQ(expectedAlive, g.alien_count_alive());
+    CHECK_EQ(b.shield[0][0] ? '#' : ' ', g.shields[0].cells[0][0]);
+    CHECK_EQ(std::string("custom"), g.replay().modeStr);
+    CHECK_EQ(b.seed, g.replay().seed);
+
     std::remove(path);
+
+    const char* badPath = "_bad_level.lvl";
+    {
+        std::ofstream bad(badPath);
+        bad << "NAME Broken Level\n";
+        bad << "SEED not-a-number AUTHOR nobody\n";
+    }
+    LevelFile keep;
+    keep.name = "Do Not Replace";
+    CHECK(!level_load(badPath, keep));
+    CHECK_EQ(std::string("Do Not Replace"), keep.name);
+    std::remove(badPath);
+
     return test_summary("test_level");
 }

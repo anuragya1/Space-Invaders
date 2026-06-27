@@ -1,4 +1,3 @@
-// replay_source.cpp
 #include "replay_source.h"
 
 namespace si {
@@ -13,4 +12,4 @@ std::uint8_t ReplaySource::poll(std::uint32_t tick, const Game&, int) {
     return 0;
 }
 
-} // namespace si
+}

@@ -1,11 +1,3 @@
-// level_file.h - .lvl text level format used by the editor.
-//
-//   NAME <name>
-//   SEED <u> AUTHOR <name>
-//   TIMING <moveDelay> <shootBase>
-//   BOSS <0|1>
-//   <AROWS lines of ACOLS chars> (X=alien, .=empty)
-//   <2 lines of 4 chars>         (#=brick, .=empty)
 #pragma once
 
 #include "../core/constants.h"
@@ -34,4 +26,4 @@ struct LevelFile {
 bool level_save(const std::string& path, const LevelFile& lv);
 bool level_load(const std::string& path, LevelFile& lv);
 
-} // namespace si
+}

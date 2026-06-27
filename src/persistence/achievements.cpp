@@ -1,4 +1,3 @@
-// achievements.cpp
 #include "achievements.h"
 
 #include <fstream>
@@ -42,4 +41,4 @@ std::vector<Achievement> achievements_read(const std::string& user) {
     return a;
 }
 
-} // namespace si
+}

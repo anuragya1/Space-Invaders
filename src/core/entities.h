@@ -1,7 +1,3 @@
-// entities.h - simple POD-ish entity structs.
-//
-// These are deliberately small and own no resources. The Game class
-// holds vectors of these and updates them each tick.
 #pragma once
 
 #include "constants.h"
@@ -21,9 +17,9 @@ enum class PUType { NONE, TRIPLE, SHIELD, RAPID };
 
 struct Bullet {
     Pt   pos;
-    int  dir;        // -1 up (player) | +1 down (alien)
+    int  dir;
     bool active = true;
-    int  owner;      // 0 = P1, 1 = P2, -1 = alien
+    int  owner;
     Bullet(int x, int y, int d, int o = 0) : pos(x, y), dir(d), owner(o) {}
     void move() {
         pos.y += dir;
@@ -131,7 +127,6 @@ struct Star {
     char sym;
 };
 
-// Multi-stage boss encounter, appears every 5 levels.
 struct Boss {
     bool active     = false;
     int  x          = W / 2;
@@ -141,8 +136,8 @@ struct Boss {
     int  maxHp      = 0;
     int  moveTimer  = 0;
     int  shootTimer = 0;
-    int  pattern    = 0;   // 0 line, 1 spread, 2 aimed
-    int  stage      = 1;   // ramps up as hp drops
+    int  pattern    = 0;
+    int  stage      = 1;
     const char* col() const {
         if (stage == 1) return color::BMAGENTA;
         if (stage == 2) return color::BRED;
@@ -150,4 +145,4 @@ struct Boss {
     }
 };
 
-} // namespace si
+}

@@ -1,4 +1,3 @@
-// telemetry.cpp
 #include "telemetry.h"
 
 #include <fstream>
@@ -25,4 +24,4 @@ void telemetry_append(const std::string& user, const LevelTelemetry& t) {
       << t.seconds << ',' << t.combo_max << ',' << t.score_at_end << '\n';
 }
 
-} // namespace si
+}

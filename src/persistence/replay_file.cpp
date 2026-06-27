@@ -1,4 +1,3 @@
-// replay_file.cpp
 #include "replay_file.h"
 
 #include <fstream>
@@ -17,9 +16,6 @@ bool replay_save(const std::string& path, const Replay& rp) {
     if (rp.expectedLevel >= 0) f << " level=" << rp.expectedLevel;
     f << '\n';
 
-    // RLE-encode runs of identical-mask frames. Big space savings on
-    // replays because most ticks are idle (mask=0). The reader accepts
-    // both "tick p1 p2" and "RUN n p1 p2" lines.
     std::size_t i = 0, N = rp.frames.size();
     while (i < N) {
         std::size_t j = i + 1;
@@ -49,8 +45,8 @@ bool replay_load(const std::string& path, Replay& rp) {
     std::ifstream f(path);
     if (!f) return false;
     std::string tok;
-    f >> tok;  // HEADER
-    // Read tokens until we hit one that's not key=value (a frame line).
+    f >> tok;
+
     std::string line;
     std::getline(f, line);
     std::istringstream is(line);
@@ -62,7 +58,7 @@ bool replay_load(const std::string& path, Replay& rp) {
         else if (tok.rfind("score=",  0) == 0) rp.expectedScore = std::stoi(tok.substr(6));
         else if (tok.rfind("level=",  0) == 0) rp.expectedLevel = std::stoi(tok.substr(6));
     }
-    // Body: accept "<tick> <p1> <p2>" or "RUN <n> <p1> <p2> <start_tick>".
+
     std::string body_line;
     while (std::getline(f, body_line)) {
         if (body_line.empty()) continue;
@@ -95,4 +91,4 @@ bool replay_load(const std::string& path, Replay& rp) {
     return true;
 }
 
-} // namespace si
+}

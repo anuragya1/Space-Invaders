@@ -1,4 +1,3 @@
-// difficulty.h - DOOM-style difficulty presets.
 #pragma once
 
 namespace si {
@@ -17,7 +16,7 @@ struct Diff {
 
 inline constexpr int N_DIFFS = 5;
 
-const Diff& difficulty(int idx);          // bounds-checked
+const Diff& difficulty(int idx);
 const Diff& difficulty_unchecked(int idx);
 
-} // namespace si
+}

@@ -1,4 +1,3 @@
-// config.cpp
 #include "config.h"
 
 #include <algorithm>
@@ -51,7 +50,7 @@ bool load_config(const std::string& path, Config& cfg) {
             else if (key == "sdl3.muted")       cfg.sdl3_muted       = (val == "1" || val == "true" || val == "yes");
             else if (key == "sdl3.director")    cfg.sdl3_director_enabled = (val == "1" || val == "true" || val == "yes");
             else if (key == "sdl3.reduced_motion") cfg.sdl3_reduced_motion = (val == "1" || val == "true" || val == "yes");
-            // unknown keys silently ignored
+
         } catch (...) { /* malformed value: ignore */ }
     }
     return true;
@@ -80,4 +79,4 @@ bool save_config(const std::string& path, const Config& cfg) {
     return true;
 }
 
-} // namespace si
+}

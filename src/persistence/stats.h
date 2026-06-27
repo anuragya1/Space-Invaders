@@ -1,4 +1,3 @@
-// stats.h - lifetime statistics.
 #pragma once
 
 #include <string>
@@ -22,4 +21,4 @@ std::string stats_path(const std::string& user);
 void        stats_write(const std::string& user, const Stats& s);
 Stats       stats_read (const std::string& user);
 
-} // namespace si
+}

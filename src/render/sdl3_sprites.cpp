@@ -1,15 +1,3 @@
-// sdl3_sprites.cpp - pixel art for Space Invaders entities.
-//
-// Each sprite is a string-literal of (w*h) characters, row-major.
-// Sprites use compact per-set palettes; identifier in palette[16] is
-// looked up by ASCII value of the character minus '0' for digits and
-// arbitrary for letters - see each individual palette definition.
-//
-// Sizing notes:
-//   TILE = 16. Aliens and player ship are 16x16. UFO is 32x16 (2
-//   cells wide). Boss is 80x32 (5 cells wide by 2 cells tall).
-//   Power-up icons are 16x16.
-
 #include "sdl3_sprites.h"
 
 namespace si {
@@ -25,8 +13,6 @@ void blit_sprite(SDL_Renderer* ren, const Sprite& s,
             const char c = s.data[y * s.w + x];
             if (c == '.' || c == ' ') continue;
 
-            // Map character -> palette index. '0'..'9' -> 0..9,
-            // 'A'..'F' -> 10..15. Anything else is treated as 1.
             int idx = 1;
             if (c >= '0' && c <= '9')       idx = c - '0';
             else if (c >= 'A' && c <= 'F')  idx = 10 + (c - 'A');
@@ -34,7 +20,7 @@ void blit_sprite(SDL_Renderer* ren, const Sprite& s,
             if (idx < 0 || idx > 15) idx = 1;
 
             const SDL_Color& pc = s.palette->colors[idx];
-            if (pc.a == 0) continue;  // transparent slot
+            if (pc.a == 0) continue;
 
             const std::uint8_t r =
                 static_cast<std::uint8_t>((pc.r * tintR) / 255);
@@ -55,118 +41,105 @@ void blit_sprite(SDL_Renderer* ren, const Sprite& s,
     }
 }
 
-// Sprite palettes.
-
 namespace {
 
-// '0' = transparent (alpha 0). Everything else is opaque.
 constexpr SDL_Color T{0, 0, 0, 0};
 
-// Alien palettes.
 const SpritePalette PAL_ALIEN_TOP {{
     T,
-    {255, 110, 110, 255},   // '1' = light red
-    {200,  60,  60, 255},   // '2' = dark red
-    {255, 255, 255, 255},   // '3' = white (eyes)
+    {255, 110, 110, 255},
+    {200,  60,  60, 255},
+    {255, 255, 255, 255},
     T, T, T, T, T, T, T, T, T, T, T, T
 }};
 
 const SpritePalette PAL_ALIEN_MID {{
     T,
-    {255, 200, 110, 255},   // '1' = light orange
-    {200, 140,  60, 255},   // '2' = dark orange
-    {255, 255, 255, 255},   // '3' = white (eyes)
+    {255, 200, 110, 255},
+    {200, 140,  60, 255},
+    {255, 255, 255, 255},
     T, T, T, T, T, T, T, T, T, T, T, T
 }};
 
 const SpritePalette PAL_ALIEN_BOT {{
     T,
-    {130, 220, 140, 255},   // '1' = light green
-    { 80, 170,  90, 255},   // '2' = dark green
-    {255, 255, 255, 255},   // '3' = white (eyes)
+    {130, 220, 140, 255},
+    { 80, 170,  90, 255},
+    {255, 255, 255, 255},
     T, T, T, T, T, T, T, T, T, T, T, T
 }};
 
-// Player palettes.
 const SpritePalette PAL_PLAYER {{
     T,
-    {130, 210, 255, 255},   // '1' = bright cyan (hull)
-    { 70, 140, 210, 255},   // '2' = dark blue (shadow)
-    {255, 255, 255, 255},   // '3' = white (cockpit/highlight)
-    {255, 220, 120, 255},   // '4' = yellow (engine glow)
+    {130, 210, 255, 255},
+    { 70, 140, 210, 255},
+    {255, 255, 255, 255},
+    {255, 220, 120, 255},
     T, T, T, T, T, T, T, T, T, T, T
 }};
 
 const SpritePalette PAL_PLAYER_P2 {{
     T,
-    {130, 230, 130, 255},   // '1' = bright green hull
-    { 60, 150,  60, 255},   // '2' = dark green
-    {255, 255, 255, 255},   // '3' = white
-    {255, 220, 120, 255},   // '4' = yellow engine
+    {130, 230, 130, 255},
+    { 60, 150,  60, 255},
+    {255, 255, 255, 255},
+    {255, 220, 120, 255},
     T, T, T, T, T, T, T, T, T, T, T
 }};
 
-// UFO palette.
 const SpritePalette PAL_UFO {{
     T,
-    {255, 100, 200, 255},   // '1' = bright pink body
-    {180,  60, 140, 255},   // '2' = dark magenta
-    {255, 255, 255, 255},   // '3' = white (dome)
-    {255, 230, 100, 255},   // '4' = yellow (window lights)
-    { 80,  20,  60, 255},   // '5' = very dark purple (underside)
+    {255, 100, 200, 255},
+    {180,  60, 140, 255},
+    {255, 255, 255, 255},
+    {255, 230, 100, 255},
+    { 80,  20,  60, 255},
     T, T, T, T, T, T, T, T, T, T
 }};
 
-// Boss palette.
 const SpritePalette PAL_BOSS {{
     T,
-    {220,  90, 220, 255},   // '1' = main body purple
-    {140,  50, 140, 255},   // '2' = darker purple shadow
-    {255, 255, 255, 255},   // '3' = white highlights
-    {255,  60,  60, 255},   // '4' = red glowing eyes
-    { 60,  20,  60, 255},   // '5' = deep dark purple
-    {255, 220, 100, 255},   // '6' = yellow accent
+    {220,  90, 220, 255},
+    {140,  50, 140, 255},
+    {255, 255, 255, 255},
+    {255,  60,  60, 255},
+    { 60,  20,  60, 255},
+    {255, 220, 100, 255},
     T, T, T, T, T, T, T, T, T
 }};
 
-// Power-up palettes.
 const SpritePalette PAL_PU_TRIPLE {{
     T,
-    {255, 220, 100, 255},   // '1' = yellow
-    {180, 140,  40, 255},   // '2' = dark yellow
-    {255, 255, 255, 255},   // '3' = white
+    {255, 220, 100, 255},
+    {180, 140,  40, 255},
+    {255, 255, 255, 255},
     T, T, T, T, T, T, T, T, T, T, T, T
 }};
 
 const SpritePalette PAL_PU_SHIELD {{
     T,
-    {130, 210, 255, 255},   // '1' = cyan
-    { 60, 130, 200, 255},   // '2' = dark blue
-    {255, 255, 255, 255},   // '3' = white
+    {130, 210, 255, 255},
+    { 60, 130, 200, 255},
+    {255, 255, 255, 255},
     T, T, T, T, T, T, T, T, T, T, T, T
 }};
 
 const SpritePalette PAL_PU_RAPID {{
     T,
-    {255, 140,  80, 255},   // '1' = orange
-    {180,  80,  40, 255},   // '2' = dark orange
-    {255, 255, 255, 255},   // '3' = white
+    {255, 140,  80, 255},
+    {180,  80,  40, 255},
+    {255, 255, 255, 255},
     T, T, T, T, T, T, T, T, T, T, T, T
 }};
 
-} // anonymous namespace
-
-// All sprites are 16x16 (or wider). Use '.' for transparent.
-// Numbers / letters index into the corresponding palette.
-
-// Alien top row (octopus-like, 3-pointer).
+}
 
 const char ALIEN_TOP_F0_DATA[] =
     "................"
     "................"
     "....11....11...."
     "....11....11...."
-    "..1111111111111."   // row of body
+    "..1111111111111."
     ".11122111122111."
     ".111111331111.11"
     "11111133331111.."
@@ -196,8 +169,6 @@ const char ALIEN_TOP_F1_DATA[] =
     "................"
     "................"
     "................";
-
-// Alien middle row (crab-like, 2-pointer).
 
 const char ALIEN_MID_F0_DATA[] =
     "................"
@@ -234,8 +205,6 @@ const char ALIEN_MID_F1_DATA[] =
     "................"
     "................"
     "................";
-
-// Alien bottom row (squid-like, 1-pointer).
 
 const char ALIEN_BOT_F0_DATA[] =
     "................"
@@ -280,9 +249,6 @@ const Sprite ALIEN_MID_F1 { ALIEN_MID_F1_DATA, 16, 16, &PAL_ALIEN_MID };
 const Sprite ALIEN_BOT_F0 { ALIEN_BOT_F0_DATA, 16, 16, &PAL_ALIEN_BOT };
 const Sprite ALIEN_BOT_F1 { ALIEN_BOT_F1_DATA, 16, 16, &PAL_ALIEN_BOT };
 
-// Player ship.
-// Classic V-shape with engine glow at the bottom.
-
 const char PLAYER_SHIP_DATA[] =
     "................"
     "................"
@@ -322,8 +288,6 @@ const char PLAYER_SHIP_P2_DATA[] =
 const Sprite PLAYER_SHIP    { PLAYER_SHIP_DATA,    16, 16, &PAL_PLAYER    };
 const Sprite PLAYER_SHIP_P2 { PLAYER_SHIP_P2_DATA, 16, 16, &PAL_PLAYER_P2 };
 
-// UFO (32x16 classic flying saucer).
-
 const char UFO_SPRITE_DATA[] =
     "................................"
     "................................"
@@ -343,8 +307,6 @@ const char UFO_SPRITE_DATA[] =
     "................................";
 
 const Sprite UFO_SPRITE { UFO_SPRITE_DATA, 32, 16, &PAL_UFO };
-
-// Boss (80x32 multi-segment cruiser).
 
 const char BOSS_SPRITE_DATA[] =
     "................................................................................"
@@ -381,9 +343,6 @@ const char BOSS_SPRITE_DATA[] =
     "................................................................................";
 
 const Sprite BOSS_SPRITE { BOSS_SPRITE_DATA, 80, 32, &PAL_BOSS };
-
-// Power-ups (16x16 each).
-// Each has a circular badge with a letter (T/S/R) and a colored ring.
 
 const char POWERUP_TRIPLE_DATA[] =
     "................"
@@ -443,4 +402,4 @@ const Sprite POWERUP_TRIPLE { POWERUP_TRIPLE_DATA, 16, 16, &PAL_PU_TRIPLE };
 const Sprite POWERUP_SHIELD { POWERUP_SHIELD_DATA, 16, 16, &PAL_PU_SHIELD };
 const Sprite POWERUP_RAPID  { POWERUP_RAPID_DATA,  16, 16, &PAL_PU_RAPID  };
 
-} // namespace si
+}

@@ -1,4 +1,3 @@
-// achievements.h - per-user achievement list with persistence.
 #pragma once
 
 #include <string>
@@ -19,4 +18,4 @@ void                     achievements_write(const std::string& user,
                                             const std::vector<Achievement>& a);
 std::vector<Achievement> achievements_read (const std::string& user);
 
-} // namespace si
+}

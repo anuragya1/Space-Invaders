@@ -1,6 +1,9 @@
-// tcp_socket.h - RAII wrapper around a TCP socket.
-//
-// Move-only. Provides blocking recvAll / sendAll / recvLine / sendLine.
+/*
+    Small move-only TCP socket wrapper.
+
+    The co-op setup code uses blocking connect/accept on a worker task, then
+    the game loop uses blocking byte reads for deterministic input lockstep.
+*/
 #pragma once
 
 #include "../platform/platform.h"
@@ -32,10 +35,8 @@ private:
     socket_t s_ = INVALID_SOCK;
 };
 
-// Host: listen, accept exactly one peer. Returns invalid socket on error.
 TCPSocket net_host(int port, int timeout_sec = 60);
 
-// Client: connect to host. Returns invalid socket on error.
 TCPSocket net_join(const std::string& ip, int port);
 
-} // namespace si::net
+}

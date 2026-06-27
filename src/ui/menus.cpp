@@ -1,4 +1,3 @@
-// menus.cpp
 #include "menus.h"
 #include "banner.h"
 
@@ -30,8 +29,6 @@
 #include <thread>
 
 namespace si {
-
-// Small terminal-menu helpers.
 
 static std::uint32_t pick_seed(std::uint32_t override) {
     return (override != 0) ? override : (std::uint32_t)std::time(nullptr);
@@ -77,8 +74,6 @@ static void post_game(Game& game, const SaveState& res,
     }
 }
 
-// Solo terminal run.
-
 void run_solo(int diffIdx, const std::string& user, Record& rec,
               SaveState& saved, Stats& stats,
               std::vector<Achievement>& ach) {
@@ -96,7 +91,7 @@ void run_solo(int diffIdx, const std::string& user, Record& rec,
         saved = game.snap();
         save_write(user, saved);
     } else {
-        // Auto-save the last run so it can always be replayed.
+
         if (!game.replay().frames.empty()) {
             Replay rp = game.replay();
             rp.player        = user;
@@ -128,8 +123,6 @@ void run_from_save(const SaveState& s, const std::string& user, Record& rec,
     }
 }
 
-// A small multiplexer source that mostly returns AI output, but lets
-// the human press Q to exit.
 namespace {
 struct AiPlusQuit : IInputSource {
     AISource&        ai;
@@ -179,8 +172,6 @@ void run_ai_demo(int diffIdx, const std::string& user,
     }
 }
 
-// Terminal replay playback.
-
 void run_replay(const std::string& path, Stats& stats,
                 std::vector<Achievement>& ach, const std::string& user) {
     Replay rp;
@@ -200,8 +191,6 @@ void run_replay(const std::string& path, Stats& stats,
     std::cout << "\n  Press ENTER to continue..."; std::cin.get();
     (void)user;
 }
-
-// Terminal network co-op.
 
 void run_host(int diffIdx, const std::string& user,
               Stats& stats, std::vector<Achievement>& ach,
@@ -298,8 +287,6 @@ void run_join(const std::string& user, const std::string& ip,
     Logger::get().set_tag("");
 }
 
-// Headless AI training.
-
 int run_train_ai(int n, int diffIdx, const std::string& ai_profile) {
     std::ofstream f("ai_train.csv");
     f << "run,score,level,profile,seed\n";
@@ -332,8 +319,6 @@ int run_train_ai(int n, int diffIdx, const std::string& ai_profile) {
               << ".  CSV written to ai_train.csv\n" << color::RST;
     return 0;
 }
-
-// Terminal settings screen.
 
 void show_settings(Config& cfg) {
     using i18n::tr;
@@ -376,10 +361,10 @@ void show_settings(Config& cfg) {
             case '2':
                 cfg.sound = !cfg.sound;
                 ui::opts().sound = cfg.sound;
-                if (cfg.sound) std::cout << '\a';   // confirmation beep
+                if (cfg.sound) std::cout << '\a';
                 break;
             case '3': {
-                // rotate balanced -> aggressive -> defensive -> balanced
+
                 if      (cfg.ai_profile == "balanced")   cfg.ai_profile = "aggressive";
                 else if (cfg.ai_profile == "aggressive") cfg.ai_profile = "defensive";
                 else                                      cfg.ai_profile = "balanced";
@@ -428,8 +413,6 @@ void show_settings(Config& cfg) {
     }
 }
 
-// Credits screen.
-
 void show_credits() {
     using i18n::tr;
     (void)!std::system(SI_CLEAR_CMD);
@@ -455,15 +438,11 @@ void show_credits() {
     std::cout << "\n\n  Press ENTER..."; std::cin.get();
 }
 
-// Main terminal menu.
-
 void run_menu(const Config& cfg, const std::string& user, Record& rec,
               SaveState& saved, Stats& stats,
               std::vector<Achievement>& ach) {
     using i18n::tr;
-    // Take a mutable copy so the settings screen can edit values
-    // without surprising the rest of the program. Persistent changes
-    // are written back to si_pro.cfg from the settings screen.
+
     Config live_cfg = cfg;
     while (true) {
         banner();
@@ -513,9 +492,7 @@ void run_menu(const Config& cfg, const std::string& user, Record& rec,
                     save_delete(user); saved.valid = false;
                 }
                 run_solo(di, user, rec, saved, stats, ach);
-                // Quick-restart loop: keep launching solo runs at the same
-                // difficulty until the user chooses NOT to retry. This is
-                // gated by a config flag so it doesn't surprise anyone.
+
                 while (live_cfg.quick_restart && !saved.valid) {
                     std::cout << "\n  " << color::BCYAN
                               << "Press R to retry "
@@ -596,4 +573,4 @@ void run_menu(const Config& cfg, const std::string& user, Record& rec,
     }
 }
 
-} // namespace si
+}

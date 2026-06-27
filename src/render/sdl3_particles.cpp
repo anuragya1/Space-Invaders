@@ -1,4 +1,3 @@
-// sdl3_particles.cpp - particle update + draw.
 #include "sdl3_particles.h"
 
 #include <SDL3/SDL.h>
@@ -15,9 +14,6 @@ float frand(float lo, float hi) {
     return lo + t * (hi - lo);
 }
 
-// Cell -> pixel-center. Mirrors SDL3Renderer's px()/py() but adds the
-// half-tile offset so particles spawn in the middle of the cell, not
-// the top-left.
 float cell_to_pxcx(int cellX) {
     return static_cast<float>(cellX) * static_cast<float>(ParticleSystem::TILE)
          + static_cast<float>(ParticleSystem::TILE) * 0.5f;
@@ -28,7 +24,7 @@ float cell_to_pxcy(int cellY) {
          + static_cast<float>(ParticleSystem::TILE) * 0.5f;
 }
 
-} // namespace
+}
 
 Particle* ParticleSystem::alloc_() {
     Particle* p = &pool_[head_];
@@ -69,7 +65,7 @@ void ParticleSystem::spawn_spark(int cellX, int cellY, int dirY,
         p->x  = px;
         p->y  = py;
         p->vx = std::cos(angle) * speed;
-        // Bias the vertical velocity toward dirY for a directional spray.
+
         p->vy = std::sin(angle) * speed + biasY * 30.0f;
         p->life    = frand(0.15f, 0.35f);
         p->lifeMax = p->life;
@@ -85,7 +81,7 @@ void ParticleSystem::update(float dtSec) {
         if (p.life <= 0.0f) { p.life = 0.0f; continue; }
         p.x  += p.vx * dtSec;
         p.y  += p.vy * dtSec;
-        // Mild drag so velocities decay; gives a "settling" look.
+
         p.vx *= 0.96f;
         p.vy *= 0.96f;
     }
@@ -98,7 +94,7 @@ void ParticleSystem::draw(SDL_Renderer* ren) const {
 
     for (const auto& p : pool_) {
         if (p.life <= 0.0f) continue;
-        const float t = p.life / p.lifeMax;           // 1 -> 0 over lifetime
+        const float t = p.life / p.lifeMax;
         const std::uint8_t a = static_cast<std::uint8_t>(255.0f * t);
         SDL_SetRenderDrawColor(ren, p.r, p.g, p.b, a);
         SDL_FRect rect{
@@ -117,4 +113,4 @@ void ParticleSystem::clear() {
     head_ = 0;
 }
 
-} // namespace si
+}

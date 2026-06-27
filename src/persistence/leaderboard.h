@@ -1,4 +1,3 @@
-// leaderboard.h - top-10 records, plus personal Record.
 #pragma once
 
 #include <string>
@@ -23,4 +22,4 @@ std::vector<Record> leaderboard_read();
 void                leaderboard_write(std::vector<Record> lb);
 void                leaderboard_submit(const Record& rec);
 
-} // namespace si
+}

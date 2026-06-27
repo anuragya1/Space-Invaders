@@ -1,4 +1,3 @@
-// leaderboard.cpp
 #include "leaderboard.h"
 
 #include <algorithm>
@@ -57,4 +56,4 @@ void leaderboard_submit(const Record& rec) {
     leaderboard_write(std::move(lb));
 }
 
-} // namespace si
+}

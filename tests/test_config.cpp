@@ -1,4 +1,3 @@
-// test_config.cpp - config round-trip behavior.
 #include "test_common.h"
 #include "../src/config/config.h"
 

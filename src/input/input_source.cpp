@@ -1,4 +1,3 @@
-// input_source.cpp - keyboard polling thread.
 #include "input_source.h"
 #include "../platform/platform.h"
 
@@ -20,7 +19,7 @@ void input_thread_main(InputState& inp) {
             continue;
         }
 #else
-        if (ch == 27) {  // ESC - start of arrow-key sequence
+        if (ch == 27) {
             int c2 = platform::read_key();
             if (c2 == '[') {
                 int c3 = platform::read_key();
@@ -45,4 +44,4 @@ void input_thread_main(InputState& inp) {
 #endif
 }
 
-} // namespace si
+}

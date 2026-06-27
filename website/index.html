@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Space Invaders - Pro Edition, a C++17 arcade game with an SDL3 build, Director AI, deterministic replays, bosses, co-op, and testable systems.">
+  <meta name="description" content="Space Invaders - Pro Edition, a C++17 arcade game with a windowed build, Director AI, deterministic replays, bosses, co-op, and testable systems.">
   <title>Space Invaders - Pro Edition</title>
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -24,13 +24,13 @@
     <section class="hero">
       <div class="hero-shade" aria-hidden="true"></div>
       <div class="hero-content">
-        <p class="eyebrow">C++17 / SDL3 arcade project</p>
+        <p class="eyebrow">C++17 arcade project</p>
         <h1>Space Invaders - Pro Edition</h1>
         <p class="lead">
-          A playable C++17 arcade game with an SDL3 build, deterministic
-          replays, Director AI, boss waves, LAN co-op tooling, tests, CI, and
-          release packaging. It started as my final-year project and grew into
-          a systems-focused game I kept improving.
+          I started this as my final-year college project, then kept pushing it
+          because the simple arcade loop turned into a good place to learn real
+          game systems: deterministic replays, a pacing Director, boss waves,
+          co-op input sync, and a windowed renderer.
         </p>
         <div class="hero-actions">
           <a class="button primary" href="#watch">Watch the demo</a>
@@ -38,7 +38,7 @@
         </div>
       </div>
       <div class="hero-status" aria-label="Project highlights">
-        <span>SDL3 build</span>
+        <span>Windowed build</span>
         <span>Director AI</span>
         <span>Replay playback</span>
         <span>Cross-platform CI</span>
@@ -47,9 +47,10 @@
 
     <section class="intro-band">
       <p>
-        The SDL3 build is the main version to try. The terminal build stays
-        useful for replay verification, tooling, and quick development checks.
-        Underneath both is the same deterministic game simulation.
+        This is not trying to pretend it is a shipped commercial game. It is a
+        small arcade project that I am turning into a cleaner open-source game:
+        playable first, testable underneath, and honest about the parts that
+        are still being improved.
       </p>
       <a href="#download">Run it locally</a>
     </section>
@@ -57,11 +58,11 @@
     <section class="section media-section" id="watch">
       <div class="section-copy">
         <p class="eyebrow">Demo</p>
-        <h2>Watch the SDL3 build in motion.</h2>
+        <h2>Real footage, not a mockup.</h2>
         <p>
-          The demo shows the player-facing build: normal waves, boss pressure,
-          HUD feedback, and the pacing systems that sit around the classic
-          arcade loop.
+          The video shows the windowed build in motion. The screenshots below show
+          the Director state, replay mode, and boss pressure moments that make
+          this version more than a basic clone.
         </p>
       </div>
       <div class="video-frame">
@@ -120,11 +121,11 @@
     <section class="section screenshots" id="screenshots">
       <div class="section-heading">
         <p class="eyebrow">Screenshots</p>
-        <h2>Actual SDL3 captures.</h2>
+        <h2>Actual game captures.</h2>
       </div>
       <div class="screenshot-grid">
         <figure class="featured-shot">
-          <img src="assets/screenshots/boss-fight.png" alt="SDL3 boss fight with Director ramping up and a pressure surge active.">
+          <img src="assets/screenshots/boss-fight.png" alt="Boss fight with Director ramping up and a pressure surge active.">
           <figcaption>
             <strong>Boss pressure</strong>
             Director ramping up during a boss wave.
@@ -141,7 +142,7 @@
           <img src="assets/screenshots/replay-mode.png" alt="Replay playback mode showing replay metadata in the HUD.">
           <figcaption>
             <strong>Replay playback</strong>
-            Recorded input being played through the SDL3 build.
+            Recorded input being played through the windowed build.
           </figcaption>
         </figure>
         <figure>
@@ -173,7 +174,7 @@
         <p class="eyebrow">Controls</p>
         <h2>Fast to pick up.</h2>
         <p>
-          The SDL3 build is the one most players should try first. The terminal
+          The windowed build is the one most players should try first. The terminal
           version is still useful for tooling, replay verification, and quick
           development checks.
         </p>
@@ -192,19 +193,19 @@
         <p class="eyebrow">Download / build</p>
         <h2>Try the latest version.</h2>
         <p>
-          GitHub Releases are the download entry point. Use the SDL3 build
-          guide if you want the windowed version locally, or grab the packaged
-          terminal builds for quick testing and replay tools.
+          Release packaging is still being tightened up. For now, GitHub
+          Releases are the download entry point, and the platform notes are
+          the best path if you want to build the player-facing version locally.
         </p>
       </div>
       <div class="download-grid">
         <a href="https://github.com/anuragya1/Space-Invaders/releases/latest">
           <span>Latest release</span>
-          Packaged terminal builds for Windows, Linux, and macOS.
+          Windows, Linux, macOS packages as they become available.
         </a>
-        <a href="https://github.com/anuragya1/Space-Invaders/blob/main/docs/SDL3_BUILD.md">
-          <span>Build SDL3 locally</span>
-          Notes for the windowed build and SDL3 dependency setup.
+        <a href="https://github.com/anuragya1/Space-Invaders/blob/main/docs/PLATFORMS.md">
+          <span>Build locally</span>
+          Short notes for Windows, Linux, macOS, the windowed target, and tests.
         </a>
         <a href="https://github.com/anuragya1/Space-Invaders">
           <span>Source code</span>
@@ -218,9 +219,9 @@
         <p class="eyebrow">Technical notes</p>
         <h2>The project is built around deterministic game state.</h2>
         <p>
-          The simulation owns the rules, input sources feed actions into it,
-          and rendering/audio observe the result. That structure keeps replays,
-          AI, co-op, and tests tied to the same behaviour.
+          The code is still being cleaned up, but the important idea is stable:
+          the simulation owns the rules, input sources feed actions into it,
+          and rendering/audio observe the result.
         </p>
       </div>
       <div class="tech-stack">
@@ -237,7 +238,7 @@
           <p>Stored input frames make playback and determinism checks possible.</p>
         </article>
         <article>
-          <h3>SDL3 presentation</h3>
+          <h3>Presentation layer</h3>
           <p>Sprites, particles, screen shake, audio, menus, and HUD feedback sit on top.</p>
         </article>
       </div>
@@ -251,9 +252,17 @@
       <div class="journey-text">
         <p>
           I originally built this as my final-year college project. At that
-          point, the goal was to get the arcade loop working. I kept going
-          because the project became a good way to learn game architecture,
-          deterministic testing, replay files, releases, and maintainability.
+          point, getting the arcade loop working was the main goal. After that,
+          I started treating it less like an assignment and more like a real
+          project: adding tests, making replay files useful, separating windowed
+          presentation from the core rules, and documenting enough that another
+          person could actually contribute.
+        </p>
+        <p>
+          There is still roughness. Some systems are older than others. Some
+          documentation is being rewritten as the code improves. That is part of
+          the point of this project now: take a student project and keep turning
+          it into something maintainable.
         </p>
       </div>
     </section>
@@ -265,12 +274,12 @@
       </div>
       <ol>
         <li>
-          <strong>Package SDL3 builds properly</strong>
+          <strong>Package windowed builds properly</strong>
           <span>Make the player-facing build easy to download on Windows, Linux, and macOS.</span>
         </li>
         <li>
           <strong>Keep replay playback visible</strong>
-          <span>Make replay files easy to create, find, verify, and showcase from SDL3.</span>
+          <span>Make replay files easy to create, find, verify, and showcase from the windowed build.</span>
         </li>
         <li>
           <strong>Harden the event flow</strong>
@@ -288,22 +297,22 @@
         <p class="eyebrow">Contribute</p>
         <h2>Small, focused pull requests are welcome.</h2>
         <p>
-          Good areas to help: SDL3 packaging, Linux/macOS validation, replay
+          Good areas to help: windowed packaging, Linux/macOS validation, replay
           tooling, tests, website media, accessibility, controller input, and
           docs that explain real tradeoffs without over-explaining C++ basics.
         </p>
       </div>
       <div class="link-panel">
-        <a href="https://github.com/anuragya1/Space-Invaders/blob/main/CONTRIBUTING.md">Contributor guide</a>
-        <a href="https://github.com/anuragya1/Space-Invaders/blob/main/ROADMAP.md">Roadmap</a>
-        <a href="https://github.com/anuragya1/Space-Invaders/blob/main/CHANGELOG.md">Changelog</a>
+        <a href="https://github.com/anuragya1/Space-Invaders/blob/main/README.md">README</a>
+        <a href="https://github.com/anuragya1/Space-Invaders/blob/main/docs/PLATFORMS.md">Platform notes</a>
+        <a href="https://github.com/anuragya1/Space-Invaders/releases">Releases</a>
         <a href="https://github.com/anuragya1/Space-Invaders/issues">Issues</a>
       </div>
     </section>
   </main>
 
   <footer class="site-footer">
-    <p>Built by Anurag Yadav. MIT licensed. Inspired by the arcade original and expanded as a C++ systems-focused game project.</p>
+    <p>Built by Anurag Yadav. MIT licensed. Inspired by the arcade original, but used here as a systems-learning playground.</p>
   </footer>
 </body>
 </html>

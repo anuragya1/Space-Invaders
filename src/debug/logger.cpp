@@ -1,4 +1,3 @@
-// logger.cpp
 #include "logger.h"
 
 #include <chrono>
@@ -53,4 +52,4 @@ void Logger::write(LogLevel level, const std::string& msg) {
     out_.flush();
 }
 
-} // namespace si
+}

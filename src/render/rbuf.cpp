@@ -1,4 +1,3 @@
-// rbuf.cpp
 #include "rbuf.h"
 #include "../core/colors.h"
 
@@ -34,4 +33,4 @@ void RBuf::print() const {
     std::cout.flush();
 }
 
-} // namespace si
+}

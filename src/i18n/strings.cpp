@@ -1,4 +1,3 @@
-// strings.cpp - English + Hindi translation tables.
 #include "strings.h"
 
 #include <unordered_map>
@@ -60,10 +59,7 @@ const Dict& english() {
 }
 
 const Dict& hindi() {
-    // Devanagari - the terminal must support UTF-8 to render correctly,
-    // otherwise these appear as garbage. Most modern terminals (xterm,
-    // gnome-terminal, Konsole, Windows Terminal, iTerm, the new Win11
-    // conhost) support UTF-8 out of the box.
+
     static const Dict d = {
         {"menu.title",           "मुख्य मेनू"},
         {"menu.new_game",        "[1]  नया खेल (एकल)"},
@@ -116,7 +112,7 @@ const Dict& hindi() {
 const Dict* g_active = &english();
 const std::string g_empty;
 
-} // namespace
+}
 
 void set_language(const std::string& code) {
     if (code == "hi") g_active = &hindi();
@@ -130,9 +126,8 @@ const std::string& tr(const std::string& key) {
         if (auto it = english().find(key); it != english().end())
             return it->second;
     }
-    // Last-resort: return the key itself - obvious to a developer that
-    // they typo'd somewhere.
+
     return key;
 }
 
-} // namespace si::i18n
+}

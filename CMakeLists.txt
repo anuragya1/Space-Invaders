@@ -15,7 +15,6 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# ---------- common sources ----------
 set(SI_CORE_SOURCES
     src/core/rng.cpp
     src/core/difficulty.cpp
@@ -50,21 +49,21 @@ if (WIN32)
     list(APPEND SI_CORE_SOURCES src/platform/platform_win32.cpp)
 else()
     list(APPEND SI_CORE_SOURCES src/platform/platform_posix.cpp)
-endif()
-
-# ---------- main executable ----------
-add_executable(si_pro src/main.cpp ${SI_CORE_SOURCES})
-
-if (WIN32)
-    target_link_libraries(si_pro PRIVATE ws2_32)
-else()
     find_package(Threads REQUIRED)
-    target_link_libraries(si_pro PRIVATE Threads::Threads)
 endif()
 
-target_include_directories(si_pro PRIVATE src)
+function(si_apply_common_target_settings target_name)
+    target_include_directories(${target_name} PRIVATE src)
+    if (WIN32)
+        target_link_libraries(${target_name} PRIVATE ws2_32)
+    else()
+        target_link_libraries(${target_name} PRIVATE Threads::Threads)
+    endif()
+endfunction()
 
-# ---------- tests ----------
+add_executable(si_pro src/main.cpp ${SI_CORE_SOURCES})
+si_apply_common_target_settings(si_pro)
+
 enable_testing()
 
 set(SI_TESTS
@@ -78,23 +77,15 @@ set(SI_TESTS
     test_determinism
 )
 
-foreach (T IN LISTS SI_TESTS)
-    add_executable(${T} tests/${T}.cpp ${SI_CORE_SOURCES})
-    if (T STREQUAL "test_director")
-        target_sources(${T} PRIVATE src/director/director.cpp)
+foreach (test_name IN LISTS SI_TESTS)
+    add_executable(${test_name} tests/${test_name}.cpp ${SI_CORE_SOURCES})
+    if (test_name STREQUAL "test_director")
+        target_sources(${test_name} PRIVATE src/director/director.cpp)
     endif()
-    target_include_directories(${T} PRIVATE src)
-    if (WIN32)
-        target_link_libraries(${T} PRIVATE ws2_32)
-    else()
-        target_link_libraries(${T} PRIVATE Threads::Threads)
-    endif()
-    add_test(NAME ${T} COMMAND ${T})
+    si_apply_common_target_settings(${test_name})
+    add_test(NAME ${test_name} COMMAND ${test_name})
 endforeach()
 
-# ---------- optional SDL3 windowed build ----------
-# Configure with:   cmake -DSI_BUILD_SDL3=ON ..
-# Then:             cmake --build . --target si_pro_sdl3
 option(SI_BUILD_SDL3 "Build the SDL3 windowed binary si_pro_sdl3" OFF)
 if (SI_BUILD_SDL3)
     find_package(SDL3 CONFIG REQUIRED)
@@ -104,16 +95,12 @@ if (SI_BUILD_SDL3)
         src/render/sdl3_particles.cpp
         src/render/sdl3_sprites.cpp
         src/audio/sdl3_audio.cpp
+        src/ui/sdl3_file_browser.cpp
         src/ui/sdl3_menu.cpp
         src/ui/sdl3_screens.cpp
         src/input/sdl3_keyboard.cpp
         src/director/director.cpp
         ${SI_CORE_SOURCES})
-    target_include_directories(si_pro_sdl3 PRIVATE src)
     target_link_libraries(si_pro_sdl3 PRIVATE SDL3::SDL3)
-    if (WIN32)
-        target_link_libraries(si_pro_sdl3 PRIVATE ws2_32)
-    else()
-        target_link_libraries(si_pro_sdl3 PRIVATE Threads::Threads)
-    endif()
+    si_apply_common_target_settings(si_pro_sdl3)
 endif()

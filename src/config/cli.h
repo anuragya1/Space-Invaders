@@ -1,17 +1,10 @@
-// cli.h - command-line argument parser.
-//
-// Skips the menu when launched with flags - useful for demos, scripted
-// multiplayer matches, replay checks, and benchmarking the AI.
-//
-//   si_pro                              # interactive menu
-//   si_pro --help
-//   si_pro --host --diff 2
-//   si_pro --join 192.168.1.5
-//   si_pro --replay run42.rpl
-//   si_pro --ai-demo --diff 3 --seed 12345
-//   si_pro --train-ai 100 --diff 2      # headless: run AI 100 times, write csv
-//   si_pro --ai-profile aggressive
-//   si_pro --log debug
+/*
+    Command-line parser for the terminal/developer binary.
+
+    SDL3 is the normal player build. This binary remains useful for replay
+    checks, AI runs, benchmarks, and the old terminal menu when explicitly
+    requested with --legacy-menu.
+*/
 #pragma once
 
 #include <cstdint>
@@ -20,15 +13,16 @@
 namespace si {
 
 enum class CliMode {
-    MENU,           // default
+    MENU,
+    LEGACY_MENU,
     HOST,
     JOIN,
     REPLAY,
     AI_DEMO,
-    TRAIN_AI,       // headless: run AI N times, write CSV
-    VERIFY_REPLAY,  // re-run a replay headless, check score matches header
-    EVOLVE_AI,      // GA over AI weights
-    BENCHMARK,      // headless timing of game loop
+    TRAIN_AI,
+    VERIFY_REPLAY,
+    EVOLVE_AI,
+    BENCHMARK,
     SHOW_HELP,
     SHOW_VERSION,
 };
@@ -36,22 +30,20 @@ enum class CliMode {
 struct CliArgs {
     CliMode       mode      = CliMode::MENU;
     int           diff      = -1;
-    std::uint32_t seed      = 0;        // 0 = use time()
+    std::uint32_t seed      = 0;
     std::string   join_ip;
     std::string   replay_path;
     int           train_n   = 0;
     int           evolve_generations = 0;
     int           bench_ticks        = 0;
-    std::string   ai_profile;           // empty = use config
-    std::string   log_level;            // empty = use config
-    std::string   username;             // skip the callsign prompt
+    std::string   ai_profile;
+    std::string   log_level;
+    std::string   username;
     bool          help_only = false;
 };
 
-// Parse argv. Returns false (and sets mode=SHOW_HELP) on parse error.
 bool parse_args(int argc, char** argv, CliArgs& out);
 
-// Print help to stdout.
 void print_help(const char* prog);
 
-} // namespace si
+}

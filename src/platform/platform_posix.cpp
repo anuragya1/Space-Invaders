@@ -1,4 +1,3 @@
-// platform_posix.cpp - POSIX (Linux / macOS) implementation
 #ifndef _WIN32
 
 #include "platform.h"
@@ -15,10 +14,6 @@ namespace si::platform {
 
 static struct termios g_old_term;
 
-// One-byte peek buffer shared between kb_available() and read_key().
-// We cannot use ungetc() because read(STDIN_FILENO,...) bypasses stdio's
-// FILE* buffer entirely, so any byte pushed back via ungetc is invisible
-// to the next read() syscall and would be lost (or read twice).
 static int g_peeked = -1;
 
 void net_init() {}
@@ -66,6 +61,6 @@ int read_key() {
 void close_socket(socket_t s) { ::close(s); }
 int  socket_errno() { return errno; }
 
-} // namespace si::platform
+}
 
-#endif // !_WIN32
+#endif

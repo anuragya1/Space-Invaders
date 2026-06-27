@@ -1,8 +1,3 @@
-// input_source.h - polymorphic input abstraction.
-//
-// Every "thing that can produce per-tick input" implements this.
-// The Game loop calls poll() twice per tick (once for each player).
-// Sources: keyboard, AI, replay, network peer.
 #pragma once
 
 #include "../core/action.h"
@@ -11,7 +6,7 @@
 
 namespace si {
 
-class Game;  // forward
+class Game;
 
 struct IInputSource {
     virtual ~IInputSource() = default;
@@ -20,9 +15,6 @@ struct IInputSource {
                               int playerId) = 0;
 };
 
-// Shared atomic state between the input thread (writer) and the game
-// thread (reader). One flag per logical action; the input thread sets
-// them as bytes arrive and the KeyboardSource consumes them per tick.
 struct InputState {
     std::atomic<bool> left   {false};
     std::atomic<bool> right  {false};
@@ -33,7 +25,6 @@ struct InputState {
     std::atomic<bool> running{true};
 };
 
-// The input thread entry point. Blocks until inp.running becomes false.
 void input_thread_main(InputState& inp);
 
-} // namespace si
+}

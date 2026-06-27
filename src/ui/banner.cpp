@@ -1,4 +1,3 @@
-// banner.cpp
 #include "banner.h"
 #include "../core/colors.h"
 #include "../core/difficulty.h"
@@ -144,4 +143,4 @@ int pick_difficulty() {
     return di;
 }
 
-} // namespace si
+}

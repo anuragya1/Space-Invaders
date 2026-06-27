@@ -1,4 +1,3 @@
-// keyboard_source.h - InputSource backed by the atomic InputState.
 #pragma once
 
 #include "input_source.h"
@@ -14,4 +13,4 @@ private:
     InputState& inp_;
 };
 
-} // namespace si
+}

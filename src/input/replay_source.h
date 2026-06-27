@@ -1,4 +1,3 @@
-// replay_source.h - feeds recorded InputFrames back into the game loop.
 #pragma once
 
 #include "input_source.h"
@@ -18,4 +17,4 @@ private:
     int                            which_;
 };
 
-} // namespace si
+}

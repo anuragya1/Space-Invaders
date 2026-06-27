@@ -1,7 +1,3 @@
-// test_common.h - tiny assertion helpers for the tests.
-//
-// Not pulling in gtest/Catch2 for a college submission keeps the build
-// dependency-free and the test artifacts inspectable.
 #pragma once
 
 #include <cstdio>

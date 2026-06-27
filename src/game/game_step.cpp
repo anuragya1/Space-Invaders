@@ -1,4 +1,3 @@
-// game_step.cpp - per-tick state updates.
 #include "game.h"
 #include "../persistence/telemetry.h"
 #include "../ui/sound.h"
@@ -18,11 +17,16 @@ void Game::init_aliens(bool all, const bool grid[AROWS][ACOLS]) {
         }
 }
 
-void Game::init_shields() {
+void Game::init_shields(const bool tmpl[2][4]) {
     shields.clear();
     int gap = W / 5;
-    for (int i = 0; i < 4; ++i)
+    for (int i = 0; i < 4; ++i) {
         shields.emplace_back(gap + i * gap - 2, H - 6);
+        if (!tmpl) continue;
+        for (int r = 0; r < 2; ++r)
+            for (int c = 0; c < 4; ++c)
+                shields.back().cells[r][c] = tmpl[r][c] ? '#' : ' ';
+    }
 }
 
 void Game::init_stars() {
@@ -74,7 +78,6 @@ void Game::alien_shoot() {
               [](const Bullet& b) { return b.dir == 1 && b.active; });
     if (cur >= diff_.alienBmax) return;
 
-    // Find the front-line alien in each column.
     std::vector<int> col2a(W, -1);
     for (int i = 0; i < (int)aliens.size(); ++i) {
         if (!aliens[i].alive) continue;
@@ -124,15 +127,15 @@ void Game::update_boss() {
     if (++boss.shootTimer >= sd) {
         boss.shootTimer = 0;
         switch (boss.pattern) {
-            case 0:  // line
+            case 0:
                 bullets.emplace_back(boss.x, boss.y + 2, +1, -1);
                 break;
-            case 1:  // spread
+            case 1:
                 bullets.emplace_back(boss.x,     boss.y + 2, +1, -1);
                 bullets.emplace_back(boss.x - 2, boss.y + 2, +1, -1);
                 bullets.emplace_back(boss.x + 2, boss.y + 2, +1, -1);
                 break;
-            case 2: { // aimed at nearest player
+            case 2: {
                 int tx = player.pos.x;
                 if (hasP2 && std::abs(player2.pos.x - boss.x) <
                               std::abs(player.pos.x - boss.x))
@@ -149,8 +152,7 @@ void Game::update_boss() {
 }
 
 void Game::try_drop_pu(int x, int y) {
-    // Base 15% chance, scaled by the Director's drop multiplier.
-    // Capped at 60% to avoid trivializing the game in dire moments.
+
     int pct = static_cast<int>(15.0f * dirDropMul_);
     if (pct > 60) pct = 60;
     if (pct < 1)  pct = 1;
@@ -232,11 +234,9 @@ void Game::hit_player(Player& p) {
 void Game::update_bullets() {
     for (auto& b : bullets) b.move();
 
-    // Upward bullets (player-fired) -- check against UFO, boss, aliens, shields.
     for (auto& b : bullets) {
         if (!b.active || b.dir != -1) continue;
 
-        // UFO
         if (ufo.active && b.pos.y == UFO_Y && b.pos.x == ufo.x) {
             b.active = false;
             ufo.active = false;
@@ -250,7 +250,6 @@ void Game::update_bullets() {
             continue;
         }
 
-        // Boss
         if (boss.active &&
             std::abs(b.pos.x - boss.x) <= 2 &&
             b.pos.y >= boss.y && b.pos.y <= boss.y + 1) {
@@ -281,7 +280,6 @@ void Game::update_bullets() {
             continue;
         }
 
-        // Aliens
         for (auto& a : aliens) {
             if (!a.alive || !(a.pos == b.pos)) continue;
             a.alive  = false;
@@ -306,12 +304,10 @@ void Game::update_bullets() {
                       "!  +" + std::to_string(pts));
         }
 
-        // Shields
         for (auto& sh : shields)
             if (sh.hit(b.pos.x, b.pos.y)) { b.active = false; break; }
     }
 
-    // Downward bullets (alien-fired)
     for (auto& b : bullets) {
         if (!b.active || b.dir != +1) continue;
         for (auto& sh : shields)
@@ -321,7 +317,6 @@ void Game::update_bullets() {
         if (hasP2 && b.pos == player2.pos) { b.active = false; hit_player(player2); continue; }
     }
 
-    // Bullet-vs-bullet cancellation.
     for (auto& b1 : bullets) {
         if (!b1.active) continue;
         for (auto& b2 : bullets) {
@@ -338,7 +333,7 @@ void Game::update_bullets() {
 void Game::next_level() {
     emit_event(GameEvent{GameEventType::LevelCleared, tick_, -1,
                          0, 0, level_});
-    // Emit per-level telemetry BEFORE the level counter advances.
+
     if (!telemetry_user_.empty()) {
         auto now = std::chrono::steady_clock::now();
         int secs = (int)std::chrono::duration<double>(
@@ -375,4 +370,4 @@ void Game::next_level() {
           " - BRACE YOURSELF ===", 100);
 }
 
-} // namespace si
+}

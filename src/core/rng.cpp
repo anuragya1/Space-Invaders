@@ -1,4 +1,3 @@
-// rng.cpp
 #include "rng.h"
 
 namespace si {
@@ -17,4 +16,4 @@ int RNG::range(int lo, int hi) {
 
 bool RNG::chance(int percent) { return range(0, 99) < percent; }
 
-} // namespace si
+}

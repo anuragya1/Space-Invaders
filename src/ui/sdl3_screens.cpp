@@ -1,4 +1,3 @@
-// sdl3_screens.cpp - draws each menu screen and overlay.
 #include "sdl3_screens.h"
 
 #include "../core/difficulty.h"
@@ -11,8 +10,6 @@ namespace si {
 
 namespace {
 
-// Local text helpers - duplicated from sdl3_menu.cpp on purpose so
-// these screens don't pull in the renderer's full header.
 void render_text(SDL_Renderer* ren, const std::string& msg,
                  float x, float y, float scale) {
     if (scale == 1.0f) {
@@ -42,9 +39,45 @@ void set_col(SDL_Renderer* ren, std::uint8_t r, std::uint8_t g,
     SDL_SetRenderDrawColor(ren, r, g, b, a);
 }
 
-} // namespace
+void draw_file_browser_screen(SDL_Renderer* ren,
+                              const std::string& title,
+                              const std::string& prompt,
+                              const std::string& emptyMessage,
+                              const std::string& footer,
+                              const MenuList& menu,
+                              const std::string& error,
+                              bool hasFiles) {
+    draw_menu_backdrop(ren);
+    draw_screen_title(ren, title);
 
-// Shared backdrops and simple decoration.
+    set_col(ren, 220, 230, 245);
+    render_text_centered(ren, prompt,
+                         static_cast<float>(SCR_W) * 0.5f,
+                         125.0f, 1.6f);
+
+    if (!hasFiles) {
+        set_col(ren, 140, 155, 175);
+        render_text_centered(ren, emptyMessage,
+                             static_cast<float>(SCR_W) * 0.5f,
+                             160.0f, 1.4f);
+    }
+
+    menu.draw(ren,
+              static_cast<float>(SCR_W) * 0.5f,
+              hasFiles ? 165.0f : 205.0f,
+              28.0f, 1.5f);
+
+    if (!error.empty()) {
+        set_col(ren, 255, 110, 110);
+        render_text_centered(ren, error,
+                             static_cast<float>(SCR_W) * 0.5f,
+                             430.0f, 1.3f);
+    }
+
+    draw_footer(ren, footer);
+}
+
+}
 
 void draw_dimmed_backdrop(SDL_Renderer* ren, std::uint8_t alpha) {
     SDL_BlendMode prev = SDL_BLENDMODE_NONE;
@@ -58,15 +91,14 @@ void draw_dimmed_backdrop(SDL_Renderer* ren, std::uint8_t alpha) {
 }
 
 void draw_menu_backdrop(SDL_Renderer* ren) {
-    // Deep blue background.
+
     set_col(ren, 10, 12, 24);
     SDL_RenderClear(ren);
 
-    // Subtle starfield - just a regular grid of dim dots.
     set_col(ren, 60, 70, 100);
     for (int x = 24; x < SCR_W; x += 48) {
         for (int y = 24; y < SCR_H; y += 48) {
-            // Pseudo-random "twinkle" by XORing positions.
+
             if (((x * 31) ^ (y * 17)) & 0x40) continue;
             fill_rect(ren,
                       static_cast<float>(x),
@@ -91,8 +123,6 @@ void draw_footer(SDL_Renderer* ren, const std::string& hint) {
                          1.5f);
 }
 
-// First-run callsign screen.
-
 void draw_username_input(SDL_Renderer* ren,
                          const std::string& buffer,
                          bool cursorBlinkOn) {
@@ -113,7 +143,6 @@ void draw_username_input(SDL_Renderer* ren,
                          static_cast<float>(SCR_W) * 0.5f,
                          270.0f, 2.0f);
 
-    // Input box outline.
     const float boxX = static_cast<float>(SCR_W) * 0.5f - 200.0f;
     const float boxY = 310.0f;
     const float boxW = 400.0f;
@@ -121,12 +150,11 @@ void draw_username_input(SDL_Renderer* ren,
     set_col(ren, 80, 90, 120);
     fill_rect(ren, boxX, boxY, boxW, boxH);
     set_col(ren, 130, 210, 255);
-    fill_rect(ren, boxX, boxY,                 boxW, 2.0f);  // top
-    fill_rect(ren, boxX, boxY + boxH - 2.0f,   boxW, 2.0f);  // bottom
-    fill_rect(ren, boxX, boxY,                 2.0f, boxH);  // left
-    fill_rect(ren, boxX + boxW - 2.0f, boxY,   2.0f, boxH);  // right
+    fill_rect(ren, boxX, boxY,                 boxW, 2.0f);
+    fill_rect(ren, boxX, boxY + boxH - 2.0f,   boxW, 2.0f);
+    fill_rect(ren, boxX, boxY,                 2.0f, boxH);
+    fill_rect(ren, boxX + boxW - 2.0f, boxY,   2.0f, boxH);
 
-    // The entered text, optionally with a blinking underscore cursor.
     std::string disp = buffer;
     if (disp.empty() && cursorBlinkOn) disp = "_";
     else if (cursorBlinkOn)            disp += '_';
@@ -137,8 +165,6 @@ void draw_username_input(SDL_Renderer* ren,
 
     draw_footer(ren, "ENTER to accept   ESC to use 'player'   max 16 chars");
 }
-
-// Main menu.
 
 void draw_main_menu(SDL_Renderer* ren, const MenuList& menu,
                     const std::string& user, bool /*hasSave*/) {
@@ -157,7 +183,6 @@ void draw_main_menu(SDL_Renderer* ren, const MenuList& menu,
     render_text_centered(ren, greet,
                          static_cast<float>(SCR_W) * 0.5f, 165.0f, 1.5f);
 
-    // Menu items, centered, evenly spaced.
     menu.draw(ren,
               static_cast<float>(SCR_W) * 0.5f,
               198.0f, 32.0f, 1.8f);
@@ -166,14 +191,10 @@ void draw_main_menu(SDL_Renderer* ren, const MenuList& menu,
         "UP/DOWN to move   ENTER to select   ESC to quit");
 }
 
-// Settings screen.
-
 void draw_settings(SDL_Renderer* ren, const MenuList& menu) {
     draw_menu_backdrop(ren);
     draw_screen_title(ren, "SETTINGS");
 
-    // Items have value-bearing labels rendered into them by the
-    // caller (e.g. "Difficulty: HARD"). We just draw the list.
     menu.draw(ren,
               static_cast<float>(SCR_W) * 0.5f,
               140.0f, 36.0f, 1.8f);
@@ -182,7 +203,101 @@ void draw_settings(SDL_Renderer* ren, const MenuList& menu) {
         "UP/DOWN to move   ENTER/LEFT/RIGHT to change   ESC to save & back");
 }
 
-// Difficulty selection.
+void draw_coop_menu(SDL_Renderer* ren,
+                    const MenuList& menu,
+                    int port) {
+    draw_menu_backdrop(ren);
+    draw_screen_title(ren, "LAN CO-OP");
+
+    set_col(ren, 220, 230, 245);
+    char buf[96];
+    std::snprintf(buf, sizeof buf, "Port: %d", port);
+    render_text_centered(ren, buf,
+                         static_cast<float>(SCR_W) * 0.5f,
+                         130.0f, 1.6f);
+
+    menu.draw(ren,
+              static_cast<float>(SCR_W) * 0.5f,
+              190.0f, 42.0f, 2.0f);
+
+    draw_footer(ren, "ENTER to select   ESC to back");
+}
+
+void draw_coop_join_input(SDL_Renderer* ren,
+                          const std::string& buffer,
+                          const std::string& error,
+                          bool cursorBlinkOn) {
+    draw_menu_backdrop(ren);
+    draw_screen_title(ren, "JOIN CO-OP");
+
+    set_col(ren, 220, 230, 245);
+    render_text_centered(ren,
+        "Enter host IP address.",
+        static_cast<float>(SCR_W) * 0.5f,
+        145.0f, 1.7f);
+
+    const float boxX = static_cast<float>(SCR_W) * 0.5f - 250.0f;
+    const float boxY = 210.0f;
+    const float boxW = 500.0f;
+    const float boxH = 54.0f;
+    set_col(ren, 80, 90, 120);
+    fill_rect(ren, boxX, boxY, boxW, boxH);
+    set_col(ren, 130, 210, 255);
+    fill_rect(ren, boxX, boxY,                 boxW, 2.0f);
+    fill_rect(ren, boxX, boxY + boxH - 2.0f,   boxW, 2.0f);
+    fill_rect(ren, boxX, boxY,                 2.0f, boxH);
+    fill_rect(ren, boxX + boxW - 2.0f, boxY,   2.0f, boxH);
+
+    std::string disp = buffer;
+    if (disp.empty() && cursorBlinkOn) disp = "_";
+    else if (cursorBlinkOn)            disp += '_';
+    set_col(ren, 220, 230, 245);
+    render_text_centered(ren, disp,
+                         static_cast<float>(SCR_W) * 0.5f,
+                         boxY + 16.0f, 2.2f);
+
+    if (!error.empty()) {
+        set_col(ren, 255, 110, 110);
+        render_text_centered(ren, error,
+                             static_cast<float>(SCR_W) * 0.5f,
+                             305.0f, 1.5f);
+    }
+
+    draw_footer(ren, "ENTER to connect   ESC to back");
+}
+
+void draw_coop_connecting(SDL_Renderer* ren,
+                          const std::string& status) {
+    draw_menu_backdrop(ren);
+    draw_screen_title(ren, "LAN CO-OP");
+
+    set_col(ren, 255, 220, 120);
+    render_text_centered(ren, status,
+                         static_cast<float>(SCR_W) * 0.5f,
+                         210.0f, 2.0f);
+
+    set_col(ren, 140, 155, 175);
+    render_text_centered(ren,
+        "The window stays responsive while the socket handshake runs.",
+        static_cast<float>(SCR_W) * 0.5f,
+        260.0f, 1.25f);
+
+    draw_footer(ren, "Waiting for connection result...");
+}
+
+void draw_coop_error(SDL_Renderer* ren,
+                     const std::string& error) {
+    draw_menu_backdrop(ren);
+    draw_screen_title(ren, "CO-OP FAILED");
+
+    set_col(ren, 255, 110, 110);
+    render_text_centered(ren,
+        error.empty() ? "Connection failed." : error,
+        static_cast<float>(SCR_W) * 0.5f,
+        205.0f, 1.8f);
+
+    draw_footer(ren, "ENTER or ESC to return to Co-op");
+}
 
 void draw_difficulty_select(SDL_Renderer* ren, const MenuList& menu) {
     draw_menu_backdrop(ren);
@@ -192,7 +307,6 @@ void draw_difficulty_select(SDL_Renderer* ren, const MenuList& menu) {
               static_cast<float>(SCR_W) * 0.5f,
               160.0f, 44.0f, 2.0f);
 
-    // Tip below the menu describing the highlighted difficulty.
     const int sel = menu.selected_tag();
     if (sel >= 0 && sel < N_DIFFS) {
         const auto& d = difficulty(sel);
@@ -215,7 +329,262 @@ void draw_difficulty_select(SDL_Renderer* ren, const MenuList& menu) {
     draw_footer(ren, "ENTER to confirm   ESC to back");
 }
 
-// Replay filename entry.
+void draw_custom_levels(SDL_Renderer* ren,
+                        const MenuList& menu,
+                        const std::string& error,
+                        bool hasLevelFiles) {
+    draw_file_browser_screen(ren,
+        "CUSTOM LEVELS",
+        "Pick a .lvl file to start a custom run.",
+        "No .lvl files found in the usual places yet.",
+        "UP/DOWN to move   ENTER to play   ESC to back",
+        menu, error, hasLevelFiles);
+}
+
+void draw_level_preview(SDL_Renderer* ren,
+                        const LevelFile& level,
+                        const std::string& path,
+                        const MenuList& menu) {
+    draw_menu_backdrop(ren);
+    draw_screen_title(ren, "LEVEL PREVIEW");
+
+    set_col(ren, 255, 220, 120);
+    render_text(ren, level.name, 80.0f, 105.0f, 2.0f);
+
+    set_col(ren, 180, 190, 210);
+    char buf[192];
+    std::snprintf(buf, sizeof buf, "Author: %s", level.author.c_str());
+    render_text(ren, buf, 80.0f, 145.0f, 1.4f);
+    std::snprintf(buf, sizeof buf, "Seed: %u   Move: %d   Shoot: %d   Boss: %s",
+                  level.seed, level.moveDelay, level.shootBase,
+                  level.boss ? "yes" : "no");
+    render_text(ren, buf, 80.0f, 170.0f, 1.4f);
+
+    std::string shown = path;
+    if (shown.size() > 72) shown = "..." + shown.substr(shown.size() - 69);
+    render_text(ren, shown, 80.0f, 195.0f, 1.1f);
+
+    const float gridX = 110.0f;
+    const float gridY = 250.0f;
+    const float cell = 18.0f;
+    set_col(ren, 140, 155, 175);
+    render_text(ren, "Aliens", gridX, gridY - 30.0f, 1.4f);
+    for (int r = 0; r < AROWS; ++r) {
+        for (int c = 0; c < ACOLS; ++c) {
+            if (level.aliens[r][c]) {
+                if (r == 0)      set_col(ren, 255, 110, 110);
+                else if (r == 1) set_col(ren, 255, 220, 120);
+                else             set_col(ren, 90, 220, 120);
+            } else {
+                set_col(ren, 45, 50, 70);
+            }
+            fill_rect(ren,
+                      gridX + static_cast<float>(c) * cell,
+                      gridY + static_cast<float>(r) * cell,
+                      12.0f, 12.0f);
+        }
+    }
+
+    const float shieldX = 520.0f;
+    const float shieldY = 250.0f;
+    set_col(ren, 140, 155, 175);
+    render_text(ren, "Shield template", shieldX, shieldY - 30.0f, 1.4f);
+    for (int r = 0; r < 2; ++r) {
+        for (int c = 0; c < 4; ++c) {
+            if (level.shield[r][c]) set_col(ren, 200, 200, 220);
+            else                    set_col(ren, 45, 50, 70);
+            fill_rect(ren,
+                      shieldX + static_cast<float>(c) * 22.0f,
+                      shieldY + static_cast<float>(r) * 22.0f,
+                      16.0f, 16.0f);
+        }
+    }
+
+    menu.draw(ren, 850.0f, 260.0f, 42.0f, 2.0f);
+    draw_footer(ren, "ENTER to select   ESC to return to Custom Levels");
+}
+
+void draw_level_editor(SDL_Renderer* ren,
+                       const LevelFile& level,
+                       const std::string& path,
+                       int activeGrid,
+                       int alienRow,
+                       int alienCol,
+                       int shieldRow,
+                       int shieldCol,
+                       const std::string& message) {
+    draw_menu_backdrop(ren);
+    draw_screen_title(ren, "LEVEL EDITOR");
+
+    set_col(ren, 255, 220, 120);
+    render_text(ren, level.name, 60.0f, 95.0f, 1.8f);
+
+    set_col(ren, 180, 190, 210);
+    char buf[192];
+    std::snprintf(buf, sizeof buf, "Author: %s   Seed: %u   Move: %d   Shoot: %d   Boss: %s",
+                  level.author.c_str(), level.seed, level.moveDelay,
+                  level.shootBase, level.boss ? "yes" : "no");
+    render_text(ren, buf, 60.0f, 130.0f, 1.25f);
+
+    std::string shown = path.empty() ? "(not saved yet)" : path;
+    if (shown.size() > 70) shown = "..." + shown.substr(shown.size() - 67);
+    render_text(ren, shown, 60.0f, 154.0f, 1.1f);
+
+    const float gridX = 85.0f;
+    const float gridY = 225.0f;
+    const float cell = 28.0f;
+    set_col(ren, activeGrid == 0 ? 255 : 140,
+                 activeGrid == 0 ? 220 : 155,
+                 activeGrid == 0 ? 120 : 175);
+    render_text(ren, "Alien grid", gridX, gridY - 35.0f, 1.4f);
+    for (int r = 0; r < AROWS; ++r) {
+        for (int c = 0; c < ACOLS; ++c) {
+            const bool cur = activeGrid == 0 && r == alienRow && c == alienCol;
+            if (cur) {
+                set_col(ren, 255, 255, 255);
+                fill_rect(ren,
+                          gridX + static_cast<float>(c) * cell - 3.0f,
+                          gridY + static_cast<float>(r) * cell - 3.0f,
+                          22.0f, 22.0f);
+            }
+            if (level.aliens[r][c]) {
+                if (r == 0)      set_col(ren, 255, 110, 110);
+                else if (r == 1) set_col(ren, 255, 220, 120);
+                else             set_col(ren, 90, 220, 120);
+            } else {
+                set_col(ren, 45, 50, 70);
+            }
+            fill_rect(ren,
+                      gridX + static_cast<float>(c) * cell,
+                      gridY + static_cast<float>(r) * cell,
+                      16.0f, 16.0f);
+        }
+    }
+
+    const float shieldX = 560.0f;
+    const float shieldY = 225.0f;
+    const float shieldCell = 36.0f;
+    set_col(ren, activeGrid == 1 ? 255 : 140,
+                 activeGrid == 1 ? 220 : 155,
+                 activeGrid == 1 ? 120 : 175);
+    render_text(ren, "Shield template", shieldX, shieldY - 35.0f, 1.4f);
+    for (int r = 0; r < 2; ++r) {
+        for (int c = 0; c < 4; ++c) {
+            const bool cur = activeGrid == 1 && r == shieldRow && c == shieldCol;
+            if (cur) {
+                set_col(ren, 255, 255, 255);
+                fill_rect(ren,
+                          shieldX + static_cast<float>(c) * shieldCell - 3.0f,
+                          shieldY + static_cast<float>(r) * shieldCell - 3.0f,
+                          28.0f, 28.0f);
+            }
+            if (level.shield[r][c]) set_col(ren, 200, 200, 220);
+            else                    set_col(ren, 45, 50, 70);
+            fill_rect(ren,
+                      shieldX + static_cast<float>(c) * shieldCell,
+                      shieldY + static_cast<float>(r) * shieldCell,
+                      22.0f, 22.0f);
+        }
+    }
+
+    set_col(ren, 140, 155, 175);
+    render_text(ren,
+        "Arrows move   Space toggle   Tab grid   B boss   N name   A author   E seed",
+        60.0f, 410.0f, 1.1f);
+    render_text(ren,
+        "M move delay   H shoot delay   F save as   S save   P play/test   Esc back",
+        60.0f, 432.0f, 1.1f);
+
+    if (!message.empty()) {
+        set_col(ren, 90, 220, 120);
+        render_text_centered(ren, message,
+                             static_cast<float>(SCR_W) * 0.5f,
+                             468.0f, 1.25f);
+    }
+}
+
+void draw_level_editor_text_input(SDL_Renderer* ren,
+                                  const std::string& label,
+                                  const std::string& buffer,
+                                  const std::string& error,
+                                  bool cursorBlinkOn) {
+    draw_menu_backdrop(ren);
+    draw_screen_title(ren, "LEVEL EDITOR");
+
+    set_col(ren, 220, 230, 245);
+    render_text_centered(ren, label,
+                         static_cast<float>(SCR_W) * 0.5f,
+                         150.0f, 1.7f);
+
+    const float boxX = static_cast<float>(SCR_W) * 0.5f - 300.0f;
+    const float boxY = 215.0f;
+    const float boxW = 600.0f;
+    const float boxH = 54.0f;
+    set_col(ren, 80, 90, 120);
+    fill_rect(ren, boxX, boxY, boxW, boxH);
+    set_col(ren, 130, 210, 255);
+    fill_rect(ren, boxX, boxY,                 boxW, 2.0f);
+    fill_rect(ren, boxX, boxY + boxH - 2.0f,   boxW, 2.0f);
+    fill_rect(ren, boxX, boxY,                 2.0f, boxH);
+    fill_rect(ren, boxX + boxW - 2.0f, boxY,   2.0f, boxH);
+
+    std::string disp = buffer;
+    if (disp.empty() && cursorBlinkOn) disp = "_";
+    else if (cursorBlinkOn)            disp += '_';
+    set_col(ren, 220, 230, 245);
+    render_text_centered(ren, disp,
+                         static_cast<float>(SCR_W) * 0.5f,
+                         boxY + 16.0f, 2.0f);
+
+    if (!error.empty()) {
+        set_col(ren, 255, 110, 110);
+        render_text_centered(ren, error,
+                             static_cast<float>(SCR_W) * 0.5f,
+                             305.0f, 1.4f);
+    }
+
+    draw_footer(ren, "ENTER to apply   ESC to cancel");
+}
+
+void draw_level_load_error(SDL_Renderer* ren,
+                           const std::string& path,
+                           const std::string& error) {
+    draw_menu_backdrop(ren);
+    draw_screen_title(ren, "LEVEL LOAD FAILED");
+
+    set_col(ren, 255, 110, 110);
+    render_text_centered(ren,
+        error.empty() ? "Could not load that level file." : error,
+        static_cast<float>(SCR_W) * 0.5f,
+        165.0f, 1.7f);
+
+    std::string shown = path;
+    if (shown.size() > 70) shown = "..." + shown.substr(shown.size() - 67);
+    set_col(ren, 180, 190, 210);
+    render_text_centered(ren, shown,
+                         static_cast<float>(SCR_W) * 0.5f,
+                         220.0f, 1.25f);
+
+    set_col(ren, 140, 155, 175);
+    render_text_centered(ren,
+        "The terminal editor and parser are still the source of truth for .lvl files.",
+        static_cast<float>(SCR_W) * 0.5f,
+        285.0f, 1.2f);
+
+    draw_footer(ren, "ENTER or ESC to return to Custom Levels");
+}
+
+void draw_replay_browser(SDL_Renderer* ren,
+                         const MenuList& menu,
+                         const std::string& error,
+                         bool hasReplayFiles) {
+    draw_file_browser_screen(ren,
+        "WATCH REPLAY",
+        "Pick a replay file, or type a filename manually.",
+        "No .rpl files found in the usual places yet.",
+        "UP/DOWN to move   ENTER to load   ESC to back",
+        menu, error, hasReplayFiles);
+}
 
 void draw_replay_input(SDL_Renderer* ren,
                        const std::string& buffer,
@@ -263,10 +632,66 @@ void draw_replay_input(SDL_Renderer* ren,
             305.0f, 1.2f);
     }
 
-    draw_footer(ren, "ENTER to load   ESC to back");
+    draw_footer(ren, "ENTER to load   ESC to replay list");
 }
 
-// Leaderboard screen.
+void draw_replay_summary(SDL_Renderer* ren,
+                         const ReplaySummaryView& summary,
+                         const MenuList& menu) {
+    draw_dimmed_backdrop(ren, 215);
+
+    set_col(ren, 255, 220, 120);
+    render_text_centered(ren, "REPLAY RESULT",
+                         static_cast<float>(SCR_W) * 0.5f,
+                         55.0f, 5.5f);
+
+    if (summary.status == "PASS") {
+        set_col(ren, 90, 220, 120);
+    } else if (summary.status == "FAIL") {
+        set_col(ren, 255, 110, 110);
+    } else {
+        set_col(ren, 180, 190, 210);
+    }
+    render_text_centered(ren, summary.status,
+                         static_cast<float>(SCR_W) * 0.5f,
+                         120.0f, 2.4f);
+
+    auto expected = [](int value) {
+        return value >= 0 ? std::to_string(value) : std::string("n/a");
+    };
+
+    const float lx = 245.0f;
+    const float vx = 520.0f;
+    float y = 175.0f;
+    const float step = 24.0f;
+
+    auto row = [&](const std::string& label, const std::string& value) {
+        set_col(ren, 140, 155, 175);
+        render_text(ren, label, lx, y, 1.45f);
+        set_col(ren, 220, 230, 245);
+        render_text(ren, value, vx, y, 1.45f);
+        y += step;
+    };
+
+    std::string file = summary.file;
+    if (file.size() > 58) file = "..." + file.substr(file.size() - 55);
+
+    row("File", file);
+    row("Player", summary.player.empty() ? "unknown" : summary.player);
+    row("Mode", summary.mode.empty() ? "unknown" : summary.mode);
+    row("Difficulty", summary.difficulty);
+    row("Seed", std::to_string(summary.seed));
+    row("Score", expected(summary.expectedScore)
+        + " expected / " + std::to_string(summary.actualScore) + " actual");
+    row("Level", expected(summary.expectedLevel)
+        + " expected / " + std::to_string(summary.actualLevel) + " actual");
+
+    menu.draw(ren,
+              static_cast<float>(SCR_W) * 0.5f,
+              370.0f, 34.0f, 1.8f);
+
+    draw_footer(ren, "UP/DOWN + ENTER   R to watch again   ESC for menu");
+}
 
 void draw_leaderboard(SDL_Renderer* ren,
                       const std::vector<Record>& lb,
@@ -274,7 +699,6 @@ void draw_leaderboard(SDL_Renderer* ren,
     draw_menu_backdrop(ren);
     draw_screen_title(ren, "LEADERBOARD");
 
-    // Header row.
     set_col(ren, 140, 155, 175);
     render_text(ren, "#",         140.0f, 130.0f, 1.5f);
     render_text(ren, "NAME",      200.0f, 130.0f, 1.5f);
@@ -299,7 +723,7 @@ void draw_leaderboard(SDL_Renderer* ren,
             if (isMe) {
                 set_col(ren, 255, 220, 120);
             } else if (i < 3) {
-                set_col(ren, 130, 210, 255);  // top 3 highlighted
+                set_col(ren, 130, 210, 255);
             } else {
                 set_col(ren, 180, 190, 210);
             }
@@ -308,7 +732,6 @@ void draw_leaderboard(SDL_Renderer* ren,
             std::snprintf(num, sizeof num, "%zu.", i + 1);
             render_text(ren, num, 140.0f, y, 1.5f);
 
-            // Truncate long names.
             std::string nm = r.name;
             if (nm.size() > 18) nm.resize(18);
             render_text(ren, nm, 200.0f, y, 1.5f);
@@ -328,8 +751,6 @@ void draw_leaderboard(SDL_Renderer* ren,
     draw_footer(ren, "ESC to back");
 }
 
-// Stats and achievements.
-
 void draw_stats_achievements(SDL_Renderer* ren,
                              const std::string& user,
                              const Stats& s,
@@ -337,7 +758,6 @@ void draw_stats_achievements(SDL_Renderer* ren,
     draw_menu_backdrop(ren);
     draw_screen_title(ren, "STATS & ACHIEVEMENTS");
 
-    // Left column: lifetime stats.
     set_col(ren, 255, 220, 120);
     std::string heading = "Stats for " + user;
     render_text(ren, heading, 80.0f, 130.0f, 2.0f);
@@ -364,7 +784,6 @@ void draw_stats_achievements(SDL_Renderer* ren,
     row("Highest level:", s.highestLevel);
     row("Highest combo:", s.highestCombo);
 
-    // Right column: achievements.
     set_col(ren, 255, 220, 120);
     render_text(ren, "Achievements", 600.0f, 130.0f, 2.0f);
 
@@ -390,13 +809,11 @@ void draw_stats_achievements(SDL_Renderer* ren,
             render_text(ren, "(locked)", 620.0f, ay, 1.5f);
         }
         ay += astep;
-        if (ay > 460.0f) break;     // run out of space
+        if (ay > 460.0f) break;
     }
 
     draw_footer(ren, "ESC to back");
 }
-
-// Pause overlay.
 
 void draw_pause_overlay(SDL_Renderer* ren, const MenuList& menu,
                         const Game& g) {
@@ -422,8 +839,6 @@ void draw_pause_overlay(SDL_Renderer* ren, const MenuList& menu,
 
     draw_footer(ren, "P to resume   UP/DOWN + ENTER on menu");
 }
-
-// Game-over overlay.
 
 void draw_game_over(SDL_Renderer* ren, const MenuList& menu,
                     const Game& g, bool isNewBest) {
@@ -457,4 +872,4 @@ void draw_game_over(SDL_Renderer* ren, const MenuList& menu,
     draw_footer(ren, "UP/DOWN + ENTER   or R to restart   ESC for menu");
 }
 
-} // namespace si
+}

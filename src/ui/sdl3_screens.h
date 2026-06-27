@@ -1,13 +1,9 @@
-// sdl3_screens.h - menu and overlay screens for the SDL3 build.
-//
-// Each free function in this header draws ONE screen. State machine
-// dispatch and event handling live in main_sdl3.cpp - these are pure
-// rendering routines plus thin helpers.
-//
-// Why functions and not classes: each screen is essentially stateless
-// at render time - the state it cares about lives in main_sdl3.cpp's
-// AppState struct. Functions are simpler than wrapping each screen
-// in its own class.
+/*
+    SDL3 menu and overlay drawing.
+
+    State transitions live in main_sdl3.cpp; these functions only render the
+    current screen from data passed in by the caller.
+*/
 #pragma once
 
 #include "sdl3_menu.h"
@@ -15,96 +11,151 @@
 #include "../persistence/stats.h"
 #include "../persistence/achievements.h"
 #include "../persistence/save_state.h"
+#include "../persistence/level_file.h"
 #include "../game/game.h"
 
 #include <SDL3/SDL.h>
+#include <cstdint>
 #include <string>
 #include <vector>
 
 namespace si {
 
-// Screen identifiers used by the SDL3 state machine.
 enum class Screen {
     USERNAME_INPUT,
     MAIN_MENU,
+    COOP_MENU,
+    COOP_JOIN_INPUT,
+    COOP_CONNECTING,
+    COOP_ERROR,
     SETTINGS,
     LEADERBOARD,
     STATS_ACHIEVEMENTS,
     DIFFICULTY_SELECT,
+    CUSTOM_LEVELS,
+    LEVEL_PREVIEW,
+    LEVEL_EDITOR,
+    LEVEL_EDITOR_TEXT_INPUT,
+    LEVEL_LOAD_ERROR,
+    REPLAY_BROWSER,
     REPLAY_INPUT,
-    PLAYING,        // game is running; main loop owns rendering
+    REPLAY_SUMMARY,
+    PLAYING,
     PAUSED,
     GAME_OVER,
     QUIT
 };
 
-// Shared drawing helpers.
+struct ReplaySummaryView {
+    std::string file;
+    std::string difficulty;
+    std::string mode;
+    std::string player;
+    std::string status;
+    std::uint32_t seed = 0;
+    int expectedScore = -1;
+    int actualScore = 0;
+    int expectedLevel = -1;
+    int actualLevel = 0;
+};
 
-// Window dimensions are taken from the renderer; we hard-code them
-// here for simplicity (same constants).
 constexpr int SCR_W = 1120;
 constexpr int SCR_H = 512;
 
-// Draw a dimmed full-window backdrop (used by pause overlay and
-// menus over a paused game).
 void draw_dimmed_backdrop(SDL_Renderer* ren, std::uint8_t alpha);
 
-// Draw a solid menu backdrop (deep blue, like the gameplay HUD).
 void draw_menu_backdrop(SDL_Renderer* ren);
 
-// Centered title at the top of a menu screen, big text.
 void draw_screen_title(SDL_Renderer* ren, const std::string& title,
                         float topY = 40.0f);
 
-// Footer hint, small dim text at the bottom.
 void draw_footer(SDL_Renderer* ren, const std::string& hint);
 
-// Specific screens and overlays.
-
-// USERNAME_INPUT
-// Caller passes the current entry buffer and whether text input is
-// active. The screen just draws; the caller handles SDL_EVENT_TEXT_INPUT
-// to mutate the buffer.
 void draw_username_input(SDL_Renderer* ren,
                           const std::string& buffer,
                           bool cursorBlinkOn);
 
-// MAIN_MENU
 void draw_main_menu(SDL_Renderer* ren,
                      const MenuList& menu,
                      const std::string& user,
                      bool hasSave);
 
-// SETTINGS
 void draw_settings(SDL_Renderer* ren, const MenuList& menu);
 
-// DIFFICULTY_SELECT
+void draw_coop_menu(SDL_Renderer* ren,
+                    const MenuList& menu,
+                    int port);
+
+void draw_coop_join_input(SDL_Renderer* ren,
+                          const std::string& buffer,
+                          const std::string& error,
+                          bool cursorBlinkOn);
+
+void draw_coop_connecting(SDL_Renderer* ren,
+                          const std::string& status);
+
+void draw_coop_error(SDL_Renderer* ren,
+                     const std::string& error);
+
 void draw_difficulty_select(SDL_Renderer* ren, const MenuList& menu);
 
-// REPLAY_INPUT
+void draw_custom_levels(SDL_Renderer* ren,
+                        const MenuList& menu,
+                        const std::string& error,
+                        bool hasLevelFiles);
+
+void draw_level_preview(SDL_Renderer* ren,
+                        const LevelFile& level,
+                        const std::string& path,
+                        const MenuList& menu);
+
+void draw_level_editor(SDL_Renderer* ren,
+                       const LevelFile& level,
+                       const std::string& path,
+                       int activeGrid,
+                       int alienRow,
+                       int alienCol,
+                       int shieldRow,
+                       int shieldCol,
+                       const std::string& message);
+
+void draw_level_editor_text_input(SDL_Renderer* ren,
+                                  const std::string& label,
+                                  const std::string& buffer,
+                                  const std::string& error,
+                                  bool cursorBlinkOn);
+
+void draw_level_load_error(SDL_Renderer* ren,
+                           const std::string& path,
+                           const std::string& error);
+
+void draw_replay_browser(SDL_Renderer* ren,
+                         const MenuList& menu,
+                         const std::string& error,
+                         bool hasReplayFiles);
+
 void draw_replay_input(SDL_Renderer* ren,
                         const std::string& buffer,
                         const std::string& error,
                         bool cursorBlinkOn);
 
-// LEADERBOARD - shows top 10
+void draw_replay_summary(SDL_Renderer* ren,
+                          const ReplaySummaryView& summary,
+                          const MenuList& menu);
+
 void draw_leaderboard(SDL_Renderer* ren,
                        const std::vector<Record>& lb,
                        const std::string& currentUser);
 
-// STATS + ACHIEVEMENTS for the current user
 void draw_stats_achievements(SDL_Renderer* ren,
                               const std::string& user,
                               const Stats& stats,
                               const std::vector<Achievement>& ach);
 
-// PAUSED overlay - drawn over the live game.
 void draw_pause_overlay(SDL_Renderer* ren, const MenuList& menu,
                          const Game& g);
 
-// GAME_OVER screen - drawn over the final game frame.
-// `isNewBest` highlights the entry if the player just beat their best.
 void draw_game_over(SDL_Renderer* ren, const MenuList& menu,
                      const Game& g, bool isNewBest);
 
-} // namespace si
+}

@@ -1,4 +1,3 @@
-// test_director.cpp - adaptive Director pacing invariants.
 #include "test_common.h"
 #include "../src/director/director.h"
 #include "../src/game/game.h"
@@ -14,13 +13,10 @@ int main() {
     Director director;
 
     director.on_restart(g);
-    director.observe(g, 0.08f); // establish baseline after restart
+    director.observe(g, 0.08f);
     CHECK_EQ(director.beat(), Director::Beat::STEADY);
     CHECK_EQ(director.beat_active(), false);
 
-    // Simulate a rough moment. Two lost lives should push pressure high
-    // enough that, after the initial cooldown, the Director opens a
-    // RELIEF WINDOW.
     g.player.lives -= 2;
     for (int i = 0; i < 32; ++i) {
         director.observe(g, 0.08f);

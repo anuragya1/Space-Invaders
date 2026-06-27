@@ -1,4 +1,3 @@
-// save_state.cpp
 #include "save_state.h"
 
 #include <cstdio>
@@ -38,4 +37,4 @@ void save_delete(const std::string& user) {
     std::remove(save_path(user).c_str());
 }
 
-} // namespace si
+}

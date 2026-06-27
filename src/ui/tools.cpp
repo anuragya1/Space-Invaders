@@ -1,4 +1,3 @@
-// tools.cpp
 #include "tools.h"
 
 #include "../core/action.h"
@@ -26,7 +25,6 @@
 
 namespace si::tools {
 
-// Replay verifier.
 int verify_replay(const std::string& path) {
     Replay rp;
     if (!replay_load(path, rp)) {
@@ -42,7 +40,7 @@ int verify_replay(const std::string& path) {
     Stats st; auto ach = achievements_default();
     ReplaySource r1(rp.frames, 1), r2(rp.frames, 2);
     Game g(rp.diffIdx, Mode::REPLAY, rp.seed, st, ach);
-    // Run long enough to cover all frames.
+
     std::uint32_t budget = rp.frames.empty() ? 10000u
                           : (rp.frames.back().tick + 200u);
     g.run_headless(&r1, &r2, budget);
@@ -73,7 +71,6 @@ int verify_replay(const std::string& path) {
     return 1;
 }
 
-// Headless benchmark.
 int benchmark(int ticks, int diffIdx) {
     Stats st; auto ach = achievements_default();
     AISource ai(ai_profile_by_name("aggressive"));
@@ -97,15 +94,6 @@ int benchmark(int ticks, int diffIdx) {
     return 0;
 }
 
-// Genetic search over AI weights.
-//
-// Genome: 5 floats {w_danger, w_align, w_pickup, w_center, cooldown}.
-// Fitness: mean score across K games on the given difficulty.
-//
-// Population: 12 individuals.
-// Per gen: evaluate all, keep top 4 (elitism), produce 8 offspring via
-// crossover + Gaussian mutation. Write each generation's best to CSV.
-
 namespace {
 struct Genome { double d, a, p, c; int cd; double fitness = 0.0; };
 
@@ -128,7 +116,7 @@ double evaluate(const Genome& g, int diffIdx, int games_per) {
     }
     return total / games_per;
 }
-} // namespace
+}
 
 int evolve_ai(int generations, int diffIdx) {
     const int POP = 12, ELITE = 4, GAMES_PER = 4;
@@ -156,7 +144,7 @@ int evolve_ai(int generations, int diffIdx) {
 
     Genome best_ever{};
     for (int gen = 1; gen <= generations; ++gen) {
-        // Evaluate.
+
         double sum = 0;
         for (auto& g : pop) {
             g.fitness = evaluate(g, diffIdx, GAMES_PER);
@@ -180,8 +168,6 @@ int evolve_ai(int generations, int diffIdx) {
                   << " a=" << pop[0].a << " p=" << pop[0].p
                   << " c=" << pop[0].c << " cd=" << pop[0].cd << "]\n";
 
-        // Breed: pop[0..ELITE-1] survives as-is. Rest replaced via
-        // uniform crossover from random pair of elites + mutation.
         std::uniform_int_distribution<int> uparent(0, ELITE - 1);
         for (int i = ELITE; i < POP; ++i) {
             const auto& pA = pop[uparent(rng)];
@@ -192,7 +178,7 @@ int evolve_ai(int generations, int diffIdx) {
             child.p  = (rng() & 1) ? pA.p  : pB.p;
             child.c  = (rng() & 1) ? pA.c  : pB.c;
             child.cd = (rng() & 1) ? pA.cd : pB.cd;
-            // Gaussian mutation.
+
             child.d  = clampd(child.d  + n01(rng) * 0.8,  0.5, 15.0);
             child.a  = clampd(child.a  + n01(rng) * 0.8,  0.5, 15.0);
             child.p  = clampd(child.p  + n01(rng) * 0.5,  0.5, 10.0);
@@ -212,10 +198,6 @@ int evolve_ai(int generations, int diffIdx) {
     return 0;
 }
 
-// AI vs AI co-op.
-//
-// Two AISources play together. We use a co-op mode so Game creates both
-// player slots, then dispatch each playerId to its own AI source.
 int ai_vs_ai(int diffIdx, const std::string& profile,
              const std::string& user, Stats& stats,
              std::vector<Achievement>& ach) {
@@ -226,8 +208,6 @@ int ai_vs_ai(int diffIdx, const std::string& profile,
     AISource ai_p1(ai_profile_by_name(profile));
     AISource ai_p2(ai_profile_by_name(profile));
 
-    // We need two independent AI sources, one per slot. Wrap them in
-    // a simple multiplexer that dispatches on playerId.
     struct Dual : IInputSource {
         AISource& a; AISource& b;
         Dual(AISource& x, AISource& y) : a(x), b(y) {}
@@ -242,4 +222,4 @@ int ai_vs_ai(int diffIdx, const std::string& profile,
     return 0;
 }
 
-} // namespace si::tools
+}

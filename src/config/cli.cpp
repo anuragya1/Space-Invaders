@@ -1,4 +1,3 @@
-// cli.cpp
 #include "cli.h"
 
 #include <cstring>
@@ -26,6 +25,7 @@ bool parse_args(int argc, char** argv, CliArgs& out) {
             out.help_only = true;
             return true;
         }
+        else if (a == "--legacy-menu") out.mode = CliMode::LEGACY_MENU;
         else if (a == "--host")    out.mode = CliMode::HOST;
         else if (a == "--join") {
             out.mode = CliMode::JOIN;
@@ -102,6 +102,7 @@ void print_help(const char* prog) {
 "  --help, -h               Show this help and exit.\n"
 "  --version, -V            Show version and exit.\n"
 "  --user NAME              Use callsign NAME, skip the prompt.\n"
+"  --legacy-menu            Open the old terminal menu.\n"
 "  --host                   Launch directly as co-op host.\n"
 "  --join IP                Launch directly as co-op client.\n"
 "  --replay FILE.rpl        Play back a recorded session.\n"
@@ -116,7 +117,8 @@ void print_help(const char* prog) {
 "  --log LEVEL              debug | info | warn | error | off.\n"
 "\n"
 "EXAMPLES\n"
-"  " << prog << "                              # interactive menu\n"
+"  " << prog << "                              # SDL3-first notice\n"
+"  " << prog << " --legacy-menu                # old terminal menu\n"
 "  " << prog << " --host --diff 2              # host a co-op game\n"
 "  " << prog << " --join 127.0.0.1             # join one\n"
 "  " << prog << " --ai-demo --seed 42          # deterministic AI run\n"
@@ -125,4 +127,4 @@ void print_help(const char* prog) {
 "  " << prog << " --verify-replay run.rpl      # check replay integrity\n";
 }
 
-} // namespace si
+}

@@ -1,4 +1,3 @@
-// director.cpp - the second AI: tunes difficulty to keep the player in flow.
 #include "director.h"
 
 #include "../game/game.h"
@@ -11,7 +10,7 @@ namespace si {
 namespace {
 constexpr float TENSION_MIN  = -3.0f;
 constexpr float TENSION_MAX  =  3.0f;
-constexpr float DRIFT_RATE   = 0.02f;     // per second toward zero
+constexpr float DRIFT_RATE   = 0.02f;
 constexpr float BEAT_TRIGGER =  0.55f;
 constexpr float BEAT_SECONDS =  8.0f;
 constexpr float BEAT_COOLDOWN = 10.0f;
@@ -32,7 +31,7 @@ float lerp(float a, float b, float t) {
 int total_lives(const Game& g) {
     return g.player.lives + (g.hasP2 ? g.player2.lives : 0);
 }
-} // namespace
+}
 
 void Director::on_restart(const Game& g) {
     tension_           = 0.0f;
@@ -63,7 +62,6 @@ void Director::observe(const Game& g, float dtSec) {
         return;
     }
 
-    // Prefer explicit gameplay events when the simulation emitted them.
     bool sawPlayerHit = false;
     bool sawPowerup = false;
     bool sawCombo = false;
@@ -96,7 +94,6 @@ void Director::observe(const Game& g, float dtSec) {
         }
     }
 
-    // Deaths since last tick (counts P1 + P2 if active).
     if (!sawPlayerHit && g.player.lives < lastLives_) {
         const int died = lastLives_ - g.player.lives;
         tension_ += TEN_DEATH * static_cast<float>(died);
@@ -108,8 +105,6 @@ void Director::observe(const Game& g, float dtSec) {
     }
     lastP2Lives_ = g.hasP2 ? g.player2.lives : 0;
 
-    // Power-up pickups since last tick. We infer from NONE -> active,
-    // matching the existing state-diff style used by the SDL3 audio path.
     const int curPower = static_cast<int>(g.player.power);
     if (!sawPowerup
         && lastPower_ == static_cast<int>(PUType::NONE)
@@ -129,14 +124,12 @@ void Director::observe(const Game& g, float dtSec) {
         lastP2Power_ = 0;
     }
 
-    // Combo high-water-mark crossings of 5, 10, 15 ...
     const int c = g.combo();
     if (!sawCombo && c >= 5 && lastCombo_ < 5) tension_ += TEN_COMBO_5;
     if (!sawCombo && c >= 10 && lastCombo_ < 10) tension_ += TEN_COMBO_5;
     if (!sawCombo && c >= 15 && lastCombo_ < 15) tension_ += TEN_COMBO_5;
     lastCombo_ = c;
 
-    // Level cleared without dying since this level started.
     if (g.level() > lastLevel_) {
         if (!sawLevelClear && total_lives(g) >= levelStartLives_) {
             tension_ += TEN_LEVEL_CLEAN;
@@ -145,8 +138,6 @@ void Director::observe(const Game& g, float dtSec) {
         levelStartLives_ = total_lives(g);
     }
 
-    // Drift slowly back toward neutral so one bad/great moment does not
-    // control the rest of the run.
     if (tension_ > 0.0f) {
         tension_ -= DRIFT_RATE * dtSec;
         if (tension_ < 0.0f) tension_ = 0.0f;
@@ -188,17 +179,16 @@ void Director::update_beat_(float dtSec) {
 }
 
 void Director::recompute_mods_() {
-    // pressure in [-1, +1]
+
     const float p = pressure();
 
-    // Three keys: pressure = +1, 0, -1. Linearly interpolate.
     if (p >= 0.0f) {
-        // 0 .. +1: ease off as p rises
+
         mods_.shootMul = lerp(1.0f, 0.6f, p);
         mods_.moveMul  = lerp(1.0f, 0.7f, p);
         mods_.dropMul  = lerp(1.0f, 2.5f, p);
     } else {
-        // 0 .. -1: ramp up as p falls
+
         const float a = -p;
         mods_.shootMul = lerp(1.0f, 1.6f, a);
         mods_.moveMul  = lerp(1.0f, 1.5f, a);
@@ -246,4 +236,4 @@ float Director::beat_progress() const {
     return clampf(beatTimer_ / BEAT_SECONDS, 0.0f, 1.0f);
 }
 
-} // namespace si
+}

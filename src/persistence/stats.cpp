@@ -1,4 +1,3 @@
-// stats.cpp
 #include "stats.h"
 
 #include <fstream>
@@ -27,4 +26,4 @@ Stats stats_read(const std::string& user) {
     return s;
 }
 
-} // namespace si
+}

@@ -1,4 +1,3 @@
-// platform_win32.cpp - Windows implementation
 #ifdef _WIN32
 
 #include "platform.h"
@@ -8,7 +7,9 @@
 #include <ws2tcpip.h>
 #include <iostream>
 
-#pragma comment(lib, "ws2_32.lib")
+#ifdef _MSC_VER
+#  pragma comment(lib, "ws2_32.lib")
+#endif
 
 namespace si::platform {
 
@@ -37,7 +38,7 @@ void show_cursor() {
     SetConsoleCursorInfo(h, &ci);
 }
 
-void set_raw_mode(bool) {}  // conio.h already non-canonical
+void set_raw_mode(bool) {}
 
 bool kb_available() { return _kbhit() != 0; }
 int  read_key()     { return _getch(); }
@@ -45,6 +46,6 @@ int  read_key()     { return _getch(); }
 void close_socket(socket_t s) { closesocket(s); }
 int  socket_errno() { return WSAGetLastError(); }
 
-} // namespace si::platform
+}
 
-#endif // _WIN32
+#endif

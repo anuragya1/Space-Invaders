@@ -1,4 +1,3 @@
-// keyboard_source.cpp
 #include "keyboard_source.h"
 #include "../core/action.h"
 
@@ -15,4 +14,4 @@ std::uint8_t KeyboardSource::poll(std::uint32_t, const Game&, int) {
     return m;
 }
 
-} // namespace si
+}

@@ -1,4 +1,3 @@
-// sdl3_menu.cpp - MenuList navigation + drawing.
 #include "sdl3_menu.h"
 
 #include <SDL3/SDL.h>
@@ -6,11 +5,7 @@
 namespace si {
 
 namespace {
-// Mirror of SDL3Renderer's tiny text helpers - we duplicate them here
-// to keep sdl3_menu independent of the renderer class (it doesn't need
-// to know what colors entities are, just how to draw text). Real
-// SDL3Renderer's draw_text could be wrapped, but copying these eight
-// lines is simpler than introducing a circular dependency.
+
 void render_text(SDL_Renderer* ren, const std::string& msg,
                  float x, float y, float scale) {
     if (scale == 1.0f) {
@@ -29,7 +24,7 @@ void render_text_centered(SDL_Renderer* ren, const std::string& msg,
     const float w = static_cast<float>(msg.size()) * 8.0f * scale;
     render_text(ren, msg, cx - w * 0.5f, y, scale);
 }
-} // namespace
+}
 
 void MenuList::clamp_selection() {
     if (items_.empty()) { idx_ = -1; return; }
@@ -46,12 +41,11 @@ void MenuList::move_to_next_enabled(int dir) {
         idx_ = (idx_ + dir + n) % n;
         if (items_[idx_].enabled) return;
     }
-    // No enabled items at all - leave idx_ where it is.
+
 }
 
 MenuList::Action MenuList::handle_key(SDL_Keycode key) {
-    // SDL3 keycodes for arrows; we keep these locally so we don't
-    // depend on the SDLK_* table being complete in the stub header.
+
     constexpr SDL_Keycode K_UP     = 0x40000052u;
     constexpr SDL_Keycode K_DOWN   = 0x40000051u;
     constexpr SDL_Keycode K_RETURN = 0x0Du;
@@ -84,10 +78,6 @@ void MenuList::draw(SDL_Renderer* ren, float cx, float top,
         const float y = top + static_cast<float>(i) * itemPxStep;
         const bool selected = ((int)i == idx_);
 
-        // Color choice:
-        //   selected enabled  -> bright cyan with a > marker
-        //   unselected enabled -> dim white
-        //   disabled           -> very dim
         if (!it.enabled) {
             SDL_SetRenderDrawColor(ren, 90, 95, 105, 255);
         } else if (selected) {
@@ -102,4 +92,4 @@ void MenuList::draw(SDL_Renderer* ren, float cx, float top,
     }
 }
 
-} // namespace si
+}

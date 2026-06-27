@@ -1,8 +1,3 @@
-// main.cpp - entry point.
-//
-// Loads si_pro.cfg (if present), parses CLI args, configures the logger,
-// then either dispatches a one-shot CLI mode or enters the interactive
-// menu loop.
 #include "config/cli.h"
 #include "config/config.h"
 #include "core/version.h"
@@ -47,7 +42,7 @@ std::string sanitize_username(const std::string& s) {
     return out;
 }
 
-} // namespace
+}
 
 int main(int argc, char** argv) {
     using namespace si;
@@ -56,11 +51,9 @@ int main(int argc, char** argv) {
     platform::enable_ansi();
     platform::net_init();
 
-    // Config is optional; defaults are good enough for a first run.
     Config cfg;
     load_config("si_pro.cfg", cfg);
 
-    // CLI flags either override config or select a non-menu tool mode.
     CliArgs args;
     if (!parse_args(argc, argv, args)) {
         print_help(argv[0]);
@@ -79,18 +72,14 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    // CLI overrides config.
     if (!args.ai_profile.empty()) cfg.ai_profile = args.ai_profile;
     if (!args.log_level.empty())  cfg.log_level  = args.log_level;
     if (args.seed != 0)           cfg.ai_seed    = args.seed;
 
-    // Terminal rendering reads these process-wide UI options.
     ui::opts().colorblind = cfg.colorblind;
     ui::opts().sound      = cfg.sound;
     i18n::set_language(cfg.language);
 
-    // Append PID to the log filename so co-located processes (host + client
-    // on the same machine for loopback testing) don't clobber each other.
     std::string log_path = cfg.log_file;
     {
         auto dot = log_path.find_last_of('.');
@@ -106,9 +95,7 @@ int main(int argc, char** argv) {
     Logger::get().configure(parse_log_level(cfg.log_level), log_path);
     LOG_INFO("si_pro start");
 
-    // Headless modes don't need a callsign; only the interactive menu
-    // and the player-driven modes (host/join/replay viewing/ai-demo) do.
-    bool needs_user = (args.mode == CliMode::MENU
+    bool needs_user = (args.mode == CliMode::LEGACY_MENU
                     || args.mode == CliMode::HOST
                     || args.mode == CliMode::JOIN
                     || args.mode == CliMode::REPLAY
@@ -123,7 +110,6 @@ int main(int argc, char** argv) {
     user = sanitize_username(user);
     LOG_INFO("user=" << user);
 
-    // Load the user's persistent files after we know the final callsign.
     Record    rec   = record_read(user);
     SaveState saved = save_read  (user);
     Stats     stats = stats_read (user);
@@ -170,12 +156,24 @@ int main(int argc, char** argv) {
         }
         case CliMode::SHOW_HELP:
         case CliMode::SHOW_VERSION:
-            // handled above
+
+            break;
+
+        case CliMode::LEGACY_MENU:
+            run_menu(cfg, user, rec, saved, stats, ach);
             break;
 
         case CliMode::MENU:
         default:
-            run_menu(cfg, user, rec, saved, stats, ach);
+            std::cout
+                << "Space Invaders - Pro Edition is SDL3-first now.\n"
+                << "Run si_pro_sdl3 for the playable game.\n\n"
+                << "This terminal binary is kept for developer/headless tools:\n"
+                << "  --verify-replay FILE\n"
+                << "  --benchmark N\n"
+                << "  --train-ai N\n"
+                << "  --evolve-ai N\n\n"
+                << "The old terminal menu is still available with --legacy-menu.\n";
             break;
     }
 

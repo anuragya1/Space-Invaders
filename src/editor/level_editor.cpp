@@ -1,4 +1,3 @@
-// level_editor.cpp
 #include "level_editor.h"
 #include "../core/colors.h"
 #include "../core/constants.h"
@@ -123,7 +122,6 @@ void run_level_editor(const std::string& user) {
             else if (ch == 's' || ch == 'S') { if (shR < 1) ++shR; dirty = true; }
         }
 
-        // Commands that need cooked-mode input.
         if (ch == 'v' || ch == 'V') {
 #ifndef _WIN32
             platform::set_raw_mode(false);
@@ -180,4 +178,4 @@ void run_level_editor(const std::string& user) {
 #endif
 }
 
-} // namespace si
+}

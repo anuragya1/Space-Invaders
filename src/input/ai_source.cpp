@@ -1,4 +1,3 @@
-// ai_source.cpp
 #include "ai_source.h"
 #include "../game/game.h"
 #include "../core/action.h"
@@ -28,11 +27,9 @@ std::uint8_t AISource::poll(std::uint32_t, const Game& g, int) {
     const Player& p = g.player;
     if (p.lives <= 0) return 0;
 
-    // Score one candidate x-position.
     auto score = [&](int candX) -> double {
         double u = 0.0;
 
-        // Incoming bullets matter more when they are close and aligned.
         double danger = 0.0;
         for (const auto& b : g.bullets) {
             if (!b.active || b.dir != +1) continue;
@@ -44,7 +41,6 @@ std::uint8_t AISource::poll(std::uint32_t, const Game& g, int) {
         }
         u -= prof_.w_danger * danger;
 
-        // Favor columns that line up with something worth shooting.
         int bestAlign = 999;
         for (const auto& a : g.aliens)
             if (a.alive)
@@ -55,7 +51,6 @@ std::uint8_t AISource::poll(std::uint32_t, const Game& g, int) {
             bestAlign = std::min(bestAlign, std::abs(g.boss.x - candX));
         u += prof_.w_align * (4.0 / (1.0 + bestAlign));
 
-        // Power-ups are only interesting if they are reachable soon.
         for (const auto& pu : g.powerups) {
             if (!pu.active) continue;
             int dx = std::abs(pu.pos.x - candX);
@@ -63,7 +58,6 @@ std::uint8_t AISource::poll(std::uint32_t, const Game& g, int) {
             if (dy < 10) u += prof_.w_pickup * 2.5 / (1.0 + dx + dy * 0.5);
         }
 
-        // Staying near center keeps escape options open.
         u -= prof_.w_center * std::abs(candX - W / 2);
 
         return u;
@@ -77,7 +71,6 @@ std::uint8_t AISource::poll(std::uint32_t, const Game& g, int) {
     if      (sL > sS + 0.1 && sL >= sR && p.pos.x > 1)    mask |= action::LEFT;
     else if (sR > sS + 0.1 && p.pos.x < W - 2)            mask |= action::RIGHT;
 
-    // Shoot only when the lane is clear and a target is nearby.
     if (cooldown_ > 0) --cooldown_;
     if (cooldown_ == 0) {
         bool laneClear = true;
@@ -107,4 +100,4 @@ std::uint8_t AISource::poll(std::uint32_t, const Game& g, int) {
     return mask;
 }
 
-} // namespace si
+}

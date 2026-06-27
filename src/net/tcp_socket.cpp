@@ -1,4 +1,3 @@
-// tcp_socket.cpp
 #include "tcp_socket.h"
 #include "../debug/logger.h"
 #include "../core/colors.h"
@@ -9,7 +8,7 @@
 #ifdef _WIN32
     #include <ws2tcpip.h>
 #else
-    #include <sys/select.h>  // fixes macOS build error because select() needs this header
+    #include <sys/select.h>
     #include <sys/socket.h>
     #include <netinet/in.h>
     #include <arpa/inet.h>
@@ -72,8 +71,6 @@ bool TCPSocket::sendLine(const std::string& l) {
     std::string m = l + '\n';
     return sendAll(m.data(), (int)m.size());
 }
-
-// Host/join helpers.
 
 TCPSocket net_host(int port, int timeout_sec) {
     TCPSocket none;
@@ -172,4 +169,4 @@ TCPSocket net_join(const std::string& ip, int port) {
     return TCPSocket(c);
 }
 
-} // namespace si::net
+}

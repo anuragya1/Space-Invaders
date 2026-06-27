@@ -1,4 +1,3 @@
-// colors.h - ANSI escape sequences for terminal colours.
 #pragma once
 
 namespace si::color {
@@ -21,4 +20,4 @@ inline constexpr const char* BMAGENTA = "\033[95m";
 inline constexpr const char* BCYAN    = "\033[96m";
 inline constexpr const char* BWHITE   = "\033[97m";
 
-} // namespace si::color
+}

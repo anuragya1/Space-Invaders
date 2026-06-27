@@ -1,4 +1,3 @@
-// game.cpp - constructors, run loop, action application.
 #include "game.h"
 #include "../input/input_source.h"
 #include "../platform/platform.h"
@@ -21,6 +20,7 @@ Game::Game(int diffIdx, Mode m, std::uint32_t seed,
       dIdx_(diffIdx),
       level_(1),
       aMoveD_(difficulty(diffIdx).moveDelay),
+      aShootBase_(difficulty(diffIdx).shootBase),
       rng_(seed),
       initialSeed_(seed),
       statsRef_(s),
@@ -46,6 +46,40 @@ Game::Game(int diffIdx, Mode m, std::uint32_t seed,
              << " diff=" << diffIdx << " seed=" << seed);
 }
 
+Game::Game(int diffIdx, Mode m, const LevelFile& level,
+           Stats& s, std::vector<Achievement>& a)
+    : player (difficulty(diffIdx).lives, 0),
+      player2(difficulty(diffIdx).lives, 1),
+      mode(m),
+      diff_(difficulty(diffIdx)),
+      dIdx_(diffIdx),
+      level_(1),
+      aMoveD_(std::max(1, level.moveDelay)),
+      aShootBase_(std::max(1, level.shootBase)),
+      rng_(level.seed),
+      initialSeed_(level.seed),
+      statsRef_(s),
+      achRef_(a)
+{
+    ufoTimer_ = 120 + rng_.range(0, 149);
+    hasP2 = (m == Mode::COOP_HOST || m == Mode::COOP_CLIENT);
+    if (hasP2) player2.pos.x = W / 2 + 4;
+    if (level.boss) start_boss_wave();
+    else            init_aliens(false, level.aliens);
+    init_shields(level.shield);
+    init_stars();
+    levelStartLives_ = player.lives;
+    rec_.seed    = level.seed;
+    rec_.diffIdx = diffIdx;
+    rec_.modeStr = "custom";
+    ++statsRef_.gamesPlayed;
+    run_start_time_   = std::chrono::steady_clock::now();
+    level_start_time_ = run_start_time_;
+    flash("CUSTOM LEVEL: " + level.name, 100);
+    LOG_INFO("Game ctor (custom level): name=" << level.name
+             << " diff=" << diffIdx << " seed=" << level.seed);
+}
+
 Game::Game(const SaveState& s, Stats& st, std::vector<Achievement>& a)
     : player (difficulty(s.diffIdx).lives, 0),
       player2(difficulty(s.diffIdx).lives, 1),
@@ -54,6 +88,7 @@ Game::Game(const SaveState& s, Stats& st, std::vector<Achievement>& a)
       dIdx_(s.diffIdx),
       level_(s.level),
       aMoveD_(s.mDelay),
+      aShootBase_(difficulty(s.diffIdx).shootBase),
       aDirX_(s.alienDirX),
       rng_(s.seed),
       initialSeed_(s.seed),
@@ -113,11 +148,9 @@ void Game::apply_action(std::uint8_t m, Player& p) {
 }
 
 void Game::handle_console() {
-    // Pause-and-prompt mini REPL. Useful when testing gameplay scenarios
-    // without recompiling or hand-playing up to the exact state.
-    // Commands: /spawn ufo | /kill all | /level <n> | /lives <n> | /help
+
     paused_ = true;
-    render();  // make sure the world is on screen
+    render();
     std::cout << color::BWHITE << "\n  > " << color::RST;
     std::cout.flush();
     std::string line;
@@ -161,13 +194,11 @@ void Game::step(std::uint8_t m1, std::uint8_t m2) {
     if (comboTimer_ > 0 && --comboTimer_ == 0) combo_ = 0;
     if (++animT_ >= 8) { animT_ = 0; animF_ ^= 1; }
     if (flashT_ > 0) --flashT_;
-    // Director-aware thresholds. mult > 1 -> shorter threshold -> faster
-    // alien fire / movement. mult < 1 -> longer threshold -> slower.
-    // Floor at 1 so we never divide-by-zero or hang.
+
     const int moveD_eff  = std::max(1,
         (int)((float)aMoveD_ / dirMoveMul_));
     if (++aMoveT_ >= moveD_eff) { aMoveT_ = 0; move_aliens(); }
-    int sd = std::max(5, diff_.shootBase - level_ * 2);
+    int sd = std::max(5, aShootBase_ - level_ * 2);
     const int sd_eff = std::max(3,
         (int)((float)sd / dirShootMul_));
     if (++aShootT_ >= sd_eff) { aShootT_ = 0; alien_shoot(); }
@@ -300,7 +331,7 @@ void Game::emit_event(GameEvent e) {
 
 SaveState Game::run_headless(IInputSource* p1, IInputSource* p2,
                              std::uint32_t max_ticks) {
-    // No render, no sleep, no stdout. Just simulate.
+
     while (!gameOver_ && tick_ < max_ticks) {
         std::uint8_t m1 = p1 ? p1->poll(tick_, *this, 0) : 0;
         std::uint8_t m2 = p2 ? p2->poll(tick_, *this, 1) : 0;
@@ -318,8 +349,7 @@ SaveState Game::run_headless(IInputSource* p1, IInputSource* p2,
 
 void Game::set_director_modifiers(float shootMul, float moveMul,
                                    float dropMul) {
-    // Keep adaptive difficulty within boring-but-safe bounds. The
-    // Director can change pacing, but it should not take over the game.
+
     auto clamp = [](float v, float lo, float hi) {
         return v < lo ? lo : (v > hi ? hi : v);
     };
@@ -328,4 +358,4 @@ void Game::set_director_modifiers(float shootMul, float moveMul,
     dirDropMul_  = clamp(dropMul,  0.5f, 3.0f);
 }
 
-} // namespace si
+}

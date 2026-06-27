@@ -1,4 +1,3 @@
-// save_state.h - mid-game snapshot for resume.
 #pragma once
 
 #include "../core/constants.h"
@@ -25,4 +24,4 @@ void        save_write (const std::string& user, const SaveState& s);
 SaveState   save_read  (const std::string& user);
 void        save_delete(const std::string& user);
 
-} // namespace si
+}

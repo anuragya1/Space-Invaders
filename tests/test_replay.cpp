@@ -1,4 +1,3 @@
-// test_replay.cpp - replay file round-trip.
 #include "test_common.h"
 #include "../src/persistence/replay_file.h"
 
