@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Space Invaders - Pro Edition, a C++17 arcade game with a windowed build, Director AI, deterministic replays, bosses, co-op, and testable systems.">
+  <meta name="description" content="Space Invaders - Pro Edition, a C++ arcade game with a windowed build, replay system, bosses, co-op, and tests.">
   <title>Space Invaders - Pro Edition</title>
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -24,33 +24,31 @@
     <section class="hero">
       <div class="hero-shade" aria-hidden="true"></div>
       <div class="hero-content">
-        <p class="eyebrow">C++17 arcade project</p>
+        <p class="eyebrow">C++ arcade project</p>
         <h1>Space Invaders - Pro Edition</h1>
         <p class="lead">
-          I started this as my final-year college project, then kept pushing it
-          because the simple arcade loop turned into a good place to learn real
-          game systems: deterministic replays, a pacing Director, boss waves,
-          co-op input sync, and a windowed renderer.
+          I started this as my final-year college project. I kept working on it
+          because the game was a good place to build systems I wanted to learn:
+          replays, boss waves, co-op, a Director, and a windowed renderer.
         </p>
         <div class="hero-actions">
           <a class="button primary" href="#watch">Watch the demo</a>
-          <a class="button secondary" href="https://github.com/anuragya1/Space-InvadersCut">View source</a>
+          <a class="button secondary" href="https://github.com/anuragya1/Space-Invaders">View source</a>
         </div>
       </div>
       <div class="hero-status" aria-label="Project highlights">
         <span>Windowed build</span>
         <span>Director AI</span>
         <span>Replay playback</span>
-        <span>Cross-platform CI</span>
+        <span>Build checks</span>
       </div>
     </section>
 
     <section class="intro-band">
       <p>
-        This is not trying to pretend it is a shipped commercial game. It is a
-        small arcade project that I am turning into a cleaner open-source game:
-        playable first, testable underneath, and honest about the parts that
-        are still being improved.
+        This is a small arcade game that grew out of a college project. The
+        current goal is simple: make it playable, keep the code easy to test,
+        and improve it without pretending it is bigger than it is.
       </p>
       <a href="#download">Run it locally</a>
     </section>
@@ -58,11 +56,10 @@
     <section class="section media-section" id="watch">
       <div class="section-copy">
         <p class="eyebrow">Demo</p>
-        <h2>Real footage, not a mockup.</h2>
+        <h2>A short look at the game.</h2>
         <p>
-          The video shows the windowed build in motion. The screenshots below show
-          the Director state, replay mode, and boss pressure moments that make
-          this version more than a basic clone.
+          The video shows the windowed build running. The screenshots below
+          show normal waves, replay playback, Director state, and boss fights.
         </p>
       </div>
       <div class="video-frame">
@@ -75,44 +72,40 @@
 
     <section class="section" id="features">
       <div class="section-heading">
-        <p class="eyebrow">What makes it interesting</p>
-        <h2>The classic loop is still there. The systems around it are the point.</h2>
+        <p class="eyebrow">Features</p>
+        <h2>The base game is simple. A few systems sit around it.</h2>
       </div>
       <div class="feature-list">
         <article>
           <span>01</span>
           <h3>Director AI</h3>
           <p>
-            The game watches pressure during a run and can shift into beats
-            like Relief Window or Pressure Surge. It is a small system, but it
-            gives the arcade loop a bit more personality.
+            The game tracks how the run is going and can ease up or push harder.
+            The HUD shows the current Director state during play.
           </p>
         </article>
         <article>
           <span>02</span>
           <h3>Replay system</h3>
           <p>
-            Runs can be saved as input logs and played back through the same
-            simulation. That makes replays useful for players and useful for
-            debugging determinism.
+            Runs can be saved and played back later. This is useful for watching
+            a run again and for checking bugs.
           </p>
         </article>
         <article>
           <span>03</span>
           <h3>Boss waves</h3>
           <p>
-            Boss encounters break up the normal wave rhythm. They also give the
-            renderer, audio, HUD, and Director systems a clear moment to show
-            what they are doing.
+            Boss encounters break up the normal wave rhythm. They give the run
+            a clear change of pace.
           </p>
         </article>
         <article>
           <span>04</span>
-          <h3>One simulation, many inputs</h3>
+          <h3>Shared game code</h3>
           <p>
-            Keyboard, AI, replay, and co-op sources all feed the same action
-            mask path. That keeps the core game easier to test and harder to
-            accidentally split into separate behaviours.
+            Keyboard, AI, replay, and co-op all feed the same game code. That
+            keeps the main rules easier to test.
           </p>
         </article>
       </div>
@@ -127,14 +120,14 @@
         <figure class="featured-shot">
           <img src="assets/screenshots/boss-fight.png" alt="Boss fight with Director ramping up and a pressure surge active.">
           <figcaption>
-            <strong>Boss pressure</strong>
-            Director ramping up during a boss wave.
+            <strong>Boss fight</strong>
+            Director pressure during a boss wave.
           </figcaption>
         </figure>
         <figure>
           <img src="assets/screenshots/director-pressure.png" alt="Gameplay with Director pushing state and pressure surge timer visible.">
           <figcaption>
-            <strong>Director beat</strong>
+            <strong>Director state</strong>
             The HUD makes the pacing system visible.
           </figcaption>
         </figure>
@@ -142,28 +135,28 @@
           <img src="assets/screenshots/replay-mode.png" alt="Replay playback mode showing replay metadata in the HUD.">
           <figcaption>
             <strong>Replay playback</strong>
-            Recorded input being played through the windowed build.
+            A saved run playing back in the windowed build.
           </figcaption>
         </figure>
         <figure>
           <img src="assets/screenshots/wave-level-02.png" alt="Normal wave gameplay with score, level, lives, aliens, shields, and player ship.">
           <figcaption>
             <strong>Core loop</strong>
-            The normal wave rhythm before things get messy.
+            Normal wave play.
           </figcaption>
         </figure>
         <figure>
           <img src="assets/screenshots/boss-entry.png" alt="A boss entering at the top of the playfield.">
           <figcaption>
             <strong>Boss entry</strong>
-            A break from the regular formation.
+            A break from the regular wave.
           </figcaption>
         </figure>
         <figure>
           <img src="assets/screenshots/boss-clean.png" alt="A later boss wave with the player positioned under the boss.">
           <figcaption>
             <strong>Late wave</strong>
-            Fewer shields, less room, more pressure.
+            Fewer shields and less room.
           </figcaption>
         </figure>
       </div>
@@ -172,11 +165,10 @@
     <section class="section two-column" id="controls">
       <div class="section-copy">
         <p class="eyebrow">Controls</p>
-        <h2>Fast to pick up.</h2>
+        <h2>Basic arcade controls.</h2>
         <p>
-          The windowed build is the one most players should try first. The terminal
-          version is still useful for tooling, replay verification, and quick
-          development checks.
+          Play the windowed build first. The terminal version is still useful
+          for replay checks, tools, and quick development runs.
         </p>
       </div>
       <div class="control-panel">
@@ -191,17 +183,16 @@
     <section class="section download-section" id="download">
       <div class="section-heading">
         <p class="eyebrow">Download / build</p>
-        <h2>Try the latest version.</h2>
+        <h2>Build it or download a release.</h2>
         <p>
-          Release packaging is still being tightened up. For now, GitHub
-          Releases are the download entry point, and the platform notes are
-          the best path if you want to build the player-facing version locally.
+          Releases are the download entry point. If a package is not available
+          for your system yet, build it locally from the platform notes.
         </p>
       </div>
       <div class="download-grid">
         <a href="https://github.com/anuragya1/Space-Invaders/releases/latest">
           <span>Latest release</span>
-          Windows, Linux, macOS packages as they become available.
+          Packages for Windows, Linux, and macOS as they are added.
         </a>
         <a href="https://github.com/anuragya1/Space-Invaders/blob/main/docs/PLATFORMS.md">
           <span>Build locally</span>
@@ -209,37 +200,36 @@
         </a>
         <a href="https://github.com/anuragya1/Space-Invaders">
           <span>Source code</span>
-          C++17 game code, tests, docs, workflows, and tools.
+          C++ game code, tests, docs, workflows, and tools.
         </a>
       </div>
     </section>
 
     <section class="section two-column" id="architecture">
       <div class="section-copy">
-        <p class="eyebrow">Technical notes</p>
-        <h2>The project is built around deterministic game state.</h2>
+        <p class="eyebrow">How it works</p>
+        <h2>Most modes use the same game simulation.</h2>
         <p>
-          The code is still being cleaned up, but the important idea is stable:
-          the simulation owns the rules, input sources feed actions into it,
-          and rendering/audio observe the result.
+          The game rules live in one simulation. Input sources send actions into
+          it. Rendering and audio read the result.
         </p>
       </div>
       <div class="tech-stack">
         <article>
           <h3>Simulation</h3>
-          <p>Fixed update logic for player, aliens, bullets, powerups, bosses, scoring, and lives.</p>
+          <p>Player, aliens, bullets, powerups, bosses, scoring, and lives.</p>
         </article>
         <article>
           <h3>Input sources</h3>
-          <p>Keyboard, replay, AI, and co-op all produce action masks for the same game path.</p>
+          <p>Keyboard, replay, AI, and co-op all use the same game path.</p>
         </article>
         <article>
           <h3>Replay files</h3>
-          <p>Stored input frames make playback and determinism checks possible.</p>
+          <p>Saved input frames make playback possible.</p>
         </article>
         <article>
           <h3>Presentation layer</h3>
-          <p>Sprites, particles, screen shake, audio, menus, and HUD feedback sit on top.</p>
+          <p>Sprites, particles, audio, menus, and HUD feedback sit on top.</p>
         </article>
       </div>
     </section>
@@ -247,22 +237,17 @@
     <section class="section journey">
       <div class="section-heading">
         <p class="eyebrow">Development journey</p>
-        <h2>Where it came from.</h2>
+        <h2>Where it started.</h2>
       </div>
       <div class="journey-text">
         <p>
-          I originally built this as my final-year college project. At that
-          point, getting the arcade loop working was the main goal. After that,
-          I started treating it less like an assignment and more like a real
-          project: adding tests, making replay files useful, separating windowed
-          presentation from the core rules, and documenting enough that another
-          person could actually contribute.
+          I originally built this as my final-year college project. At first,
+          the goal was just to get the arcade loop working. Later I added tests,
+          replays, a windowed build, co-op, and better project structure.
         </p>
         <p>
-          There is still roughness. Some systems are older than others. Some
-          documentation is being rewritten as the code improves. That is part of
-          the point of this project now: take a student project and keep turning
-          it into something maintainable.
+          Some parts are still rough. Some systems are older than others. I am
+          keeping the project moving by improving one piece at a time.
         </p>
       </div>
     </section>
@@ -270,24 +255,24 @@
     <section class="section roadmap">
       <div class="section-heading">
         <p class="eyebrow">Roadmap</p>
-        <h2>What I would rather improve next.</h2>
+        <h2>What I want to improve next.</h2>
       </div>
       <ol>
         <li>
-          <strong>Package windowed builds properly</strong>
-          <span>Make the player-facing build easy to download on Windows, Linux, and macOS.</span>
+          <strong>Package windowed builds</strong>
+          <span>Make downloads easier on Windows, Linux, and macOS.</span>
         </li>
         <li>
-          <strong>Keep replay playback visible</strong>
-          <span>Make replay files easy to create, find, verify, and showcase from the windowed build.</span>
+          <strong>Improve replay playback</strong>
+          <span>Make replay files easier to create, find, and check.</span>
         </li>
         <li>
-          <strong>Harden the event flow</strong>
-          <span>Keep simulation, audio, achievements, telemetry, and presentation from tangling together.</span>
+          <strong>Clean up events</strong>
+          <span>Keep simulation, audio, achievements, telemetry, and presentation separate.</span>
         </li>
         <li>
-          <strong>Add only high-value gameplay</strong>
-          <span>Prefer memorable Director and replay moments over piling on random features.</span>
+          <strong>Add gameplay carefully</strong>
+          <span>Prefer a few useful changes over adding features for the sake of it.</span>
         </li>
       </ol>
     </section>
@@ -295,11 +280,10 @@
     <section class="section two-column" id="contribute">
       <div class="section-copy">
         <p class="eyebrow">Contribute</p>
-        <h2>Small, focused pull requests are welcome.</h2>
+        <h2>Small pull requests are welcome.</h2>
         <p>
-          Good areas to help: windowed packaging, Linux/macOS validation, replay
-          tooling, tests, website media, accessibility, controller input, and
-          docs that explain real tradeoffs without over-explaining C++ basics.
+          Good areas to help: packaging, Linux/macOS checks, replay tooling,
+          tests, website media, accessibility, controller input, and clear docs.
         </p>
       </div>
       <div class="link-panel">
@@ -312,7 +296,7 @@
   </main>
 
   <footer class="site-footer">
-    <p>Built by Anurag Yadav. MIT licensed. Inspired by the arcade original, but used here as a systems-learning playground.</p>
+    <p>Built by Anurag Yadav. MIT licensed. Inspired by the arcade original.</p>
   </footer>
 </body>
 </html>
